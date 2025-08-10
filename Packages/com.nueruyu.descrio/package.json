@@ -14,5 +14,12 @@
     "yaml",
     "json"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "samples": [
+    {
+      "displayName": "NpcTalk",
+      "description": "A sample demonstrating a basic NPC dialogue sequence.",
+      "path": "Samples~/NpcTalk"
+    }
+  ]
 }
