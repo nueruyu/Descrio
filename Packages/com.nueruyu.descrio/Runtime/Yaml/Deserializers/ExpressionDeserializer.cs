@@ -10,9 +10,9 @@ namespace Descrio.Yaml.Deserializers
     public class ExpressionDeserializer : INodeDeserializer
     {
         public bool Deserialize(
-            YamlDotNet.Core.IParser parser,
+            IParser parser,
             Type expectedType,
-            Func<YamlDotNet.Core.IParser, Type, object> nestedObjectDeserializer,
+            Func<IParser, Type, object> nestedObjectDeserializer,
             out object value,
             ObjectDeserializer rootDeserializer)
         {
@@ -28,7 +28,10 @@ namespace Descrio.Yaml.Deserializers
             {
                 parser.Consume<Scalar>();
 
-                var expressionString = scalar.Value.Substring(2, scalar.Value.Length - 3).Trim();
+                var expressionString = scalar.Value.Length > 3
+                    ? scalar.Value.Substring(2, scalar.Value.Length - 3).Trim()
+                    : "";
+
                 var expressionParser = new ExpressionParser(expressionString);
                 value = expressionParser.Parse();
                 return true;

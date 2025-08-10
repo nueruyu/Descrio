@@ -14,7 +14,7 @@ namespace Descrio.Yaml.Nodes
 
         public WhenCaseBlock ToCaseBlock()
         {
-            var instructions = ThenBlock?.Select(s => s.ToInstruction()).ToArray();
+            var instructions = ThenBlock?.Select(s => s.ToInstruction()).ToArray() ?? System.Array.Empty<IInstruction>();
             return new WhenCaseBlock(Condition, instructions);
         }
     }

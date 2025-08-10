@@ -26,7 +26,12 @@ namespace Descrio.Execution
             if (!_context.Callables.TryGet(instruction.Name, out var callable))
                 throw new InvalidOperationException($"Callable '{instruction.Name}' not found.");
 
-            var args = await Task.WhenAll(instruction.ArgExpressions.Select(e => e.AcceptAsync(this).AsTask()));
+            var args = new object[instruction.ArgExpressions.Length];
+            for (var i = 0; i < instruction.ArgExpressions.Length; i++)
+            {
+                args[i] = await instruction.ArgExpressions[i].AcceptAsync(this);
+            }
+
             var result = await callable.CallAsync(args, _context);
 
             if (!string.IsNullOrEmpty(instruction.ReturnVariable))
@@ -161,7 +166,9 @@ namespace Descrio.Execution
                 {
                     return Convert.ToDouble(convertible, CultureInfo.InvariantCulture) != 0.0;
                 }
-                catch (Exception) { /* Fall through */ }
+                catch (FormatException) { /* Fall through */ }
+                catch (InvalidCastException) { /* Fall through */ }
+                catch (OverflowException) { /* Fall through */ }
             }
             return true;
         }

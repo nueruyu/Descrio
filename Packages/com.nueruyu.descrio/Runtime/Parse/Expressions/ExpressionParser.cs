@@ -50,6 +50,9 @@ namespace Descrio.Parse.Expressions
         private IExpression ParsePrimary()
         {
             SkipWhitespace();
+            if (_position >= _text.Length)
+                return new LiteralExpression(null);
+
             if (_text[_position] == '\'' || _text[_position] == '"')
             {
                 return ParseQuotedString();
