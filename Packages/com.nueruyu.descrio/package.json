@@ -17,9 +17,9 @@
   "license": "MIT",
   "samples": [
     {
-      "displayName": "1. Basic Example",
-      "description": "Contains basic usage scenes and scripts.",
-      "path": "Samples~/01_BasicExample"
+      "displayName": "NpcTalk",
+      "description": "A sample demonstrating a basic NPC dialogue sequence.",
+      "path": "Samples~/NpcTalk"
     }
   ]
 }
