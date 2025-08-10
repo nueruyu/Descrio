@@ -14,5 +14,12 @@
     "yaml",
     "json"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "samples": [
+    {
+      "displayName": "1. Basic Example",
+      "description": "Contains basic usage scenes and scripts.",
+      "path": "Samples~/01_BasicExample"
+    }
+  ]
 }

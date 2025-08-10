@@ -101,3 +101,6 @@ InitTestScene*.unity*
 
 # Nuget
 /Assets/Packages/
+
+/Assets/Descrio/Samples
+/Assets/Descrio/Samples.meta
