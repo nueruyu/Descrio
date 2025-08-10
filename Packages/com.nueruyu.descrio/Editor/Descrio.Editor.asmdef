@@ -1,0 +1,18 @@
+{
+    "name": "Descrio.Editor",
+    "rootNamespace": "Descrio.Editor",
+    "references": [
+        "GUID:127d39a7cd44abf4a9e0dbffc79db6c2"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
