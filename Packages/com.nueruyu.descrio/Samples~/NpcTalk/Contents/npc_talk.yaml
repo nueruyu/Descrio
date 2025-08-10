@@ -1,0 +1,33 @@
+statements:
+  - !call
+    name: ShowMessage
+    args:
+      - 'Welcome. I am a guide.'
+
+  - !call
+    name: ShowMessage
+    args:
+      - 'I can help you with your task. What would you like to do?'
+
+  - !call
+    name: ShowChoices
+    args:
+      - ['Ask about this system', 'Explore the area', 'Leave']
+    return: choice_index # Store the returned index in 'choice_index'
+
+  - !when
+    cases:
+      - condition: ${choice_index == 0}
+        then:
+          - !call
+            name: ShowMessage
+            args: ['This system allows logic to be defined via simple text files.']
+      - condition: ${choice_index == 1}
+        then:
+          - !call
+            name: ShowMessage
+            args: ['You look around. It is a quiet and peaceful place.']
+      - then: # Default case for choice_index == 2 or any other value
+          - !call
+            name: ShowMessage
+            args: ['Farewell.']
