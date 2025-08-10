@@ -5,6 +5,6 @@ namespace Descrio
 {
     public interface ICallable
     {
-        ValueTask<object> CallAsync(object[] args, CancellationToken cancellationToken);
+        ValueTask<object> CallAsync(object[] args, ExecutionContext context);
     }
 }

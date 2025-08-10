@@ -1,3 +1,4 @@
+using Descrio.Execution;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -5,6 +6,6 @@ namespace Descrio
 {
     public interface IInstruction
     {
-        ValueTask ExecuteAsync(ExecutionContext context);
+        ValueTask AcceptAsync(IAstVisitor visitor);
     }
 }
