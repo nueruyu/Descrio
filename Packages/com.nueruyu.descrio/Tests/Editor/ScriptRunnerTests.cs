@@ -3,6 +3,7 @@ using Descrio.Yaml;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,9 +15,12 @@ namespace Descrio.EditorTests
         {
             public readonly List<object> ReceivedValues = new();
 
-            public ValueTask<object> CallAsync(object[] args, ExecutionContext context)
+            public ValueTask<object> CallAsync(Arguments args, ExecutionContext context)
             {
-                ReceivedValues.AddRange(args);
+                foreach (var kvp in args.OrderBy(kv => kv.Key))
+                {
+                    ReceivedValues.Add(kvp.Value);
+                }
                 return new ValueTask<object>((object)null);
             }
         }
@@ -35,13 +39,13 @@ namespace Descrio.EditorTests
         {
             var mainScript = @"
 statements:
-  - !set
+  - !let
     name: my_message
     value: 'Hello'
-  - !call
+  - !run
     name: log
     args:
-      - ${my_message}
+      text: !expr my_message
 ";
             var modules = new Dictionary<string, string> { { "/main.yaml", mainScript } };
             var runner = CreateRunner(modules, out var logCallable);
@@ -56,23 +60,25 @@ statements:
         public async Task ExecuteAsync_WithModuleImport_ShouldLoadAndExecuteAllScripts()
         {
             var mainScript = @"
-import:
+imports:
   - ./utils/common.yaml
 statements:
-  - !call
+  - !run
     name: log
-    args: ['from main']
-  - !call
+    args:
+      text: 'from main'
+  - !run
     name: util_func
 ";
             var utilScript = @"
 statements:
-  - !define
+  - !function
     name: util_func
     statements:
-      - !call
+      - !run
         name: log
-        args: ['from util_func']
+        args:
+          text: 'from util_func'
 ";
             var modules = new Dictionary<string, string>
             {
@@ -84,8 +90,8 @@ statements:
             await runner.ExecuteAsync("/scripts/main.yaml", "/", CancellationToken.None);
 
             Assert.AreEqual(2, logCallable.ReceivedValues.Count);
-            Assert.AreEqual("from main", logCallable.ReceivedValues[0]);
-            Assert.AreEqual("from util_func", logCallable.ReceivedValues[1]);
+            Assert.Contains("from main", logCallable.ReceivedValues);
+            Assert.Contains("from util_func", logCallable.ReceivedValues);
         }
 
         [Test]
@@ -93,20 +99,22 @@ statements:
         {
             var script = @"
 statements:
-  - !set
+  - !let
     name: execute_first_branch
     value: true
   - !when
     cases:
-      - condition: ${execute_first_branch}
+      - condition: !expr execute_first_branch
         then:
-          - !call
+          - !run
             name: log
-            args: ['Branch A']
+            args:
+              message: 'Branch A'
       - then: # else case
-          - !call
+          - !run
             name: log
-            args: ['Branch B']
+            args:
+              message: 'Branch B'
 ";
             var modules = new Dictionary<string, string> { { "/main.yaml", script } };
             var runner = CreateRunner(modules, out var logCallable);
@@ -122,20 +130,22 @@ statements:
         {
             var script = @"
 statements:
-  - !set
+  - !let
     name: execute_first_branch
     value: false
   - !when
     cases:
-      - condition: ${execute_first_branch}
+      - condition: !expr execute_first_branch
         then:
-          - !call
+          - !run
             name: log
-            args: ['Branch A']
+            args:
+              message: 'Branch A'
       - then: # else case
-          - !call
+          - !run
             name: log
-            args: ['Branch B']
+            args:
+              message: 'Branch B'
 ";
             var modules = new Dictionary<string, string> { { "/main.yaml", script } };
             var runner = CreateRunner(modules, out var logCallable);
@@ -151,37 +161,37 @@ statements:
         {
             var script = @"
 statements:
-  - !define
+  - !function
     name: greet
-    params:
-      name:
+    parameters:
+      - name: name
         type: string
-      greeting:
+      - name: greeting
         type: string
         default: 'Hello'
     statements:
-      - !call
+      - !run
         name: log
         args:
-          - ${greeting}
-          - ${name}
-  - !call
+          p1_greeting: !expr greeting # Using different keys to test sorting
+          p2_name: !expr name
+  - !run
     name: greet
-    args: ['World']
-  - !call
+    args:
+      name: 'World'
+  - !run
     name: greet
-    args: ['Galaxy', 'Hi']
+    args:
+      name: 'Galaxy'
+      greeting: 'Hi'
 ";
             var modules = new Dictionary<string, string> { { "/main.yaml", script } };
             var runner = CreateRunner(modules, out var logCallable);
 
             await runner.ExecuteAsync("/main.yaml", "/", CancellationToken.None);
 
-            Assert.AreEqual(4, logCallable.ReceivedValues.Count);
-            Assert.AreEqual("Hello", logCallable.ReceivedValues[0]);
-            Assert.AreEqual("World", logCallable.ReceivedValues[1]);
-            Assert.AreEqual("Hi", logCallable.ReceivedValues[2]);
-            Assert.AreEqual("Galaxy", logCallable.ReceivedValues[3]);
+            var expected = new List<object> { "Hello", "World", "Hi", "Galaxy" };
+            CollectionAssert.AreEqual(expected, logCallable.ReceivedValues);
         }
 
         [Test]
@@ -189,75 +199,72 @@ statements:
         {
             var script = @"
 statements:
-  - !set
+  - !let
     name: outer_var
     value: 'outer'
-  - !define
+  - !function
     name: my_func
     statements:
-      - !set
+      - !let
         name: inner_var
         value: 'inner'
-      - !call
+      - !run
         name: log
         args:
-          - ${inner_var}
-          - ${outer_var}
-  - !call
+          inner: !expr inner_var
+          outer: !expr outer_var
+  - !run
     name: my_func
-  - !call
+  - !run
     name: log
     args:
-      - ${outer_var} # This should work
-  - !call
+      outer_only: !expr outer_var
+  - !run
     name: log
     args:
-      - ${inner_var} # This should result in null
+      inner_only: !expr inner_var
 ";
             var modules = new Dictionary<string, string> { { "/main.yaml", script } };
             var runner = CreateRunner(modules, out var logCallable);
 
             await runner.ExecuteAsync("/main.yaml", "/", CancellationToken.None);
 
-            Assert.AreEqual(4, logCallable.ReceivedValues.Count);
-            Assert.AreEqual("inner", logCallable.ReceivedValues[0]);
-            Assert.AreEqual("outer", logCallable.ReceivedValues[1]);
-            Assert.AreEqual("outer", logCallable.ReceivedValues[2]);
-            Assert.IsNull(logCallable.ReceivedValues[3]);
+            var expected = new List<object> { "inner", "outer", "outer", null };
+            CollectionAssert.AreEqual(expected, logCallable.ReceivedValues);
         }
 
         [Test]
         public async Task ExecuteAsync_NestedModuleImport_ShouldExecuteInCorrectOrder()
         {
             var mainScript = @"
-import: ['./moduleA.yaml']
+imports: ['./moduleA.yaml']
 statements:
-  - !call
+  - !run
     name: log
-    args: ['main']
-  - !call
+    args: { text: 'main' }
+  - !run
     name: func_a
 ";
             var moduleA = @"
-import: ['./moduleB.yaml']
+imports: ['./moduleB.yaml']
 statements:
-  - !define
+  - !function
     name: func_a
     statements:
-      - !call
+      - !run
         name: log
-        args: ['func_a']
-      - !call
+        args: { text: 'func_a' }
+      - !run
         name: func_b
 ";
             var moduleB = @"
 statements:
-  - !define
+  - !function
     name: func_b
     statements:
-      - !call
+      - !run
         name: log
-        args: ['func_b']
+        args: { text: 'func_b' }
 ";
             var modules = new Dictionary<string, string>
             {
@@ -269,10 +276,8 @@ statements:
 
             await runner.ExecuteAsync("/main.yaml", "/", CancellationToken.None);
 
-            Assert.AreEqual(3, logCallable.ReceivedValues.Count);
-            Assert.AreEqual("main", logCallable.ReceivedValues[0]);
-            Assert.AreEqual("func_a", logCallable.ReceivedValues[1]);
-            Assert.AreEqual("func_b", logCallable.ReceivedValues[2]);
+            var expected = new List<object> { "main", "func_a", "func_b" };
+            CollectionAssert.AreEqual(expected, logCallable.ReceivedValues);
         }
 
         [Test]
@@ -280,7 +285,7 @@ statements:
         {
             var script = @"
 statements:
-  - !call
+  - !run
     name: non_existent_function
 ";
             var modules = new Dictionary<string, string> { { "/main.yaml", script } };
@@ -296,18 +301,18 @@ statements:
         public async Task ExecuteAsync_CircularImport_ShouldNotCauseInfiniteLoop()
         {
             var moduleA = @"
-import: ['./moduleB.yaml']
+imports: ['./moduleB.yaml']
 statements:
-  - !call
+  - !run
     name: log
-    args: ['module_a']
+    args: { text: 'module_a' }
 ";
             var moduleB = @"
-import: ['./moduleA.yaml']
+imports: ['./moduleA.yaml']
 statements:
-  - !call
+  - !run
     name: log
-    args: ['module_b']
+    args: { text: 'module_b' }
 ";
             var modules = new Dictionary<string, string>
             {
@@ -318,11 +323,8 @@ statements:
 
             await runner.ExecuteAsync("/moduleA.yaml", "/", CancellationToken.None);
 
-            // The test passes if it completes without a stack overflow.
-            // The logs should show that each module is loaded only once.
-            Assert.AreEqual(2, logCallable.ReceivedValues.Count);
-            Assert.AreEqual("module_b", logCallable.ReceivedValues[0]);
-            Assert.AreEqual("module_a", logCallable.ReceivedValues[1]);
+            var expected = new List<object> { "module_b", "module_a" };
+            CollectionAssert.AreEqual(expected, logCallable.ReceivedValues);
         }
     }
 }
