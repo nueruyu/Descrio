@@ -1,175 +1,226 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Linq;
+using static Descrio.Parse.Expressions.TokenType;
 
 namespace Descrio.Parse.Expressions
 {
+    /// <summary>
+    /// A Pratt parser for parsing expressions. It uses a Tokenizer to first
+    /// convert the source string into a stream of tokens, and then uses
+    /// precedence rules to construct an abstract syntax tree (AST).
+    /// </summary>
     public class ExpressionParser
     {
-        private readonly string _text;
-        private int _position;
+        private readonly List<Token> _tokens;
+        private int _current = 0;
+
+        // Delegate types for Pratt parsing rules.
+        private delegate IExpression PrefixParselet();
+
+        private delegate IExpression InfixParselet(IExpression left);
+
+        private readonly Dictionary<TokenType, PrefixParselet> _prefixParselets = new();
+        private readonly Dictionary<TokenType, InfixParselet> _infixParselets = new();
+        private readonly Dictionary<TokenType, Precedence> _precedences = new();
+
+        /// <summary>
+        /// Defines operator precedence levels, from lowest to highest.
+        /// This controls the order of operations (e.g., multiplication before addition).
+        /// </summary>
+        private enum Precedence
+        {
+            NONE,       // Lowest precedence
+            EQUALITY,   // == !=
+            COMPARISON, // > < >= <=
+            TERM,       // + -
+            FACTOR,     // * /
+            UNARY,      // ! -
+        }
 
         public ExpressionParser(string text)
         {
-            _text = text;
-            _position = 0;
+            var tokenizer = new Tokenizer(text);
+            _tokens = tokenizer.ScanTokens();
+
+            // Register Prefix parselets, which handle tokens that appear at the start of an expression.
+            Register(IDENTIFIER, () => new VariableExpression(Previous().Lexeme));
+            Register(NUMBER, () => new LiteralExpression(Previous().Literal));
+            Register(TRUE, () => new LiteralExpression(true));
+            Register(FALSE, () => new LiteralExpression(false));
+            Register(NULL, () => new LiteralExpression(null));
+            Register(STRING, () => ParseInterpolatedString((string)Previous().Literal));
+
+            // Unary operators are also prefix.
+            Register(BANG, () => new UnaryExpression(OperatorType.Not, ParsePrecedence(Precedence.UNARY)));
+            Register(MINUS, () => new UnaryExpression(OperatorType.Subtract, ParsePrecedence(Precedence.UNARY)));
+
+            // Grouping with parentheses.
+            Register(LEFT_PAREN, () =>
+            {
+                var expr = ParsePrecedence(Precedence.NONE);
+                Consume(RIGHT_PAREN, "Expect ')' after expression.");
+                return expr;
+            });
+
+            // Register Infix parselets, which handle tokens that appear between two operands.
+            Register(PLUS, OperatorType.Add, Precedence.TERM);
+            Register(MINUS, OperatorType.Subtract, Precedence.TERM);
+            Register(STAR, OperatorType.Multiply, Precedence.FACTOR);
+            Register(SLASH, OperatorType.Divide, Precedence.FACTOR);
+            Register(EQUAL_EQUAL, OperatorType.Equal, Precedence.EQUALITY);
+            Register(BANG_EQUAL, OperatorType.NotEqual, Precedence.EQUALITY);
+            Register(GREATER, OperatorType.GreaterThan, Precedence.COMPARISON);
+            Register(GREATER_EQUAL, OperatorType.GreaterThanOrEqual, Precedence.COMPARISON);
+            Register(LESS, OperatorType.LessThan, Precedence.COMPARISON);
+            Register(LESS_EQUAL, OperatorType.LessThanOrEqual, Precedence.COMPARISON);
         }
 
+        /// <summary>
+        /// Parses the token stream and returns the root expression of the AST.
+        /// </summary>
         public IExpression Parse()
         {
-            var left = ParsePrimary();
-
-            while (true)
+            // Handle empty input gracefully.
+            if (Current().Type == EOF)
             {
-                SkipWhitespace();
-                if (_position >= _text.Length)
-                    break;
+                return new LiteralExpression(null);
+            }
 
-                OperatorType? op = null;
-                if (Peek(0, 2) == "==")
+            var expression = ParsePrecedence(Precedence.NONE);
+
+            // After parsing, we must be at the end of the input.
+            // If not, it means there were extra, unexpected tokens.
+            if (!IsAtEnd())
+            {
+                throw new FormatException($"Unexpected token '{Current().Lexeme}' found after the expression.");
+            }
+
+            return expression;
+        }
+
+        /// <summary>
+        /// The core of the Pratt parser. It recursively parses expressions
+        /// based on operator precedence.
+        /// </summary>
+        private IExpression ParsePrecedence(Precedence precedence)
+        {
+            if (IsAtEnd())
+            {
+                throw new FormatException("Unexpected end of expression.");
+            }
+
+            var token = Advance();
+            if (!_prefixParselets.TryGetValue(token.Type, out var prefixParselet))
+            {
+                throw new FormatException($"Expected an expression but found '{token.Lexeme}' at position {token.Position}.");
+            }
+
+            var left = prefixParselet();
+
+            // This loop is the magic of Pratt parsing. It continues as long as
+            // the next operator has a higher precedence than the current one.
+            while (precedence < GetPrecedence(Current().Type))
+            {
+                token = Advance();
+                if (!_infixParselets.TryGetValue(token.Type, out var infixParselet))
                 {
-                    op = OperatorType.Equal;
-                    _position += 2;
+                    // This should ideally not be reached if the grammar is well-defined.
+                    throw new FormatException($"No infix parselet found for operator '{token.Lexeme}'.");
                 }
-                else if (Peek(0, 2) == "!=")
-                {
-                    op = OperatorType.NotEqual;
-                    _position += 2;
-                }
-                // TODO: Add other operators like >, <, >=, <= here if needed
-
-                if (op == null)
-                    break;
-
-                var right = ParsePrimary();
-                left = new BinaryExpression(left, right, op.Value);
+                left = infixParselet(left);
             }
 
             return left;
         }
 
-        private IExpression ParsePrimary()
+        private void Register(TokenType type, PrefixParselet parselet) => _prefixParselets[type] = parselet;
+
+        private void Register(TokenType type, OperatorType opType, Precedence precedence)
         {
-            SkipWhitespace();
-            if (_position >= _text.Length)
-                return new LiteralExpression(null);
-
-            if (_text[_position] == '\'' || _text[_position] == '"')
-            {
-                return ParseInterpolatedString();
-            }
-
-            var start = _position;
-            while (_position < _text.Length &&
-                !char.IsWhiteSpace(_text[_position]) &&
-                "!=()".IndexOf(_text[_position]) == -1)
-            {
-                _position++;
-            }
-
-            var token = _text.Substring(start, _position - start);
-
-            // Try to convert the token to a literal value (bool, long, double).
-            // If it remains a string, treat it as a variable.
-            var literalValue = ValueConverter.Convert(token);
-            if (literalValue is string stringValue && stringValue == token)
-            {
-                return new VariableExpression(token);
-            }
-            else
-            {
-                return new LiteralExpression(literalValue);
-            }
+            // The recursive call to ParsePrecedence with the operator's own precedence
+            // correctly handles left-associativity for operators of the same precedence level.
+            _infixParselets[type] = (left) => new BinaryExpression(left, ParsePrecedence(precedence), opType);
+            _precedences[type] = precedence;
         }
 
-        private IExpression ParseInterpolatedString()
+        private Precedence GetPrecedence(TokenType type)
         {
-            var quote = _text[_position];
-            _position++; // Skip the opening quote.
+            return _precedences.GetValueOrDefault(type, Precedence.NONE);
+        }
 
+        private IExpression ParseInterpolatedString(string stringValue)
+        {
             var parts = new List<IExpression>();
-            var lastIndex = _position;
+            var lastIndex = 0;
+            var currentIndex = 0;
 
-            while (_position < _text.Length && _text[_position] != quote)
+            while ((currentIndex = stringValue.IndexOf("${", currentIndex, StringComparison.Ordinal)) != -1)
             {
-                // Look for the '${' pattern.
-                if (Peek(0, 2) == "${")
+                // Add the literal part before the interpolation.
+                if (currentIndex > lastIndex)
                 {
-                    // Add the preceding literal part, if any.
-                    if (_position > lastIndex)
-                    {
-                        parts.Add(new LiteralExpression(_text.Substring(lastIndex, _position - lastIndex)));
-                    }
-
-                    _position += 2; // Skip the '${'.
-                    var expressionStart = _position;
-
-                    // Find the matching '}' brace, respecting nested braces.
-                    var braceDepth = 1;
-                    while (_position < _text.Length && braceDepth > 0)
-                    {
-                        char currentChar = _text[_position];
-                        if (currentChar == '{')
-                        {
-                            braceDepth++;
-                        }
-                        else if (currentChar == '}')
-                        {
-                            braceDepth--;
-                        }
-                        _position++;
-                    }
-
-                    // --- Implementation for the TODO part ---
-                    if (braceDepth != 0)
-                    {
-                        // If braceDepth is not zero, it means we reached the end of the string
-                        // without finding a matching closing brace.
-                        throw new FormatException($"Unterminated expression in interpolated string starting at position {expressionStart - 2}. Missing '}}'.");
-                    }
-
-                    // Extract the content inside ${...}.
-                    var expressionString = _text.Substring(expressionStart, _position - expressionStart - 1);
-
-                    // Recursively parse the content as a new expression.
-                    var innerExpressionParser = new ExpressionParser(expressionString);
-                    parts.Add(innerExpressionParser.Parse());
-
-                    lastIndex = _position;
+                    parts.Add(new LiteralExpression(stringValue.Substring(lastIndex, currentIndex - lastIndex)));
                 }
-                else
+
+                var expressionStart = currentIndex + 2;
+                var braceDepth = 1;
+                var end = expressionStart;
+                while (end < stringValue.Length && braceDepth > 0)
                 {
-                    _position++;
+                    char c = stringValue[end];
+                    if (c == '{')
+                        braceDepth++;
+                    else if (c == '}')
+                        braceDepth--;
+                    end++;
                 }
+
+                if (braceDepth != 0)
+                    throw new FormatException("Unterminated expression in interpolated string.");
+
+                var innerExpressionString = stringValue.Substring(expressionStart, end - expressionStart - 1);
+
+                // Recursively create a new parser for the inner expression.
+                // This correctly handles nested and empty expressions.
+                var innerParser = new ExpressionParser(innerExpressionString);
+                parts.Add(innerParser.Parse());
+
+                currentIndex = end;
+                lastIndex = currentIndex;
             }
 
-            // Add the final literal part after the last expression.
-            if (_position > lastIndex)
+            // Add the final literal part after the last interpolation.
+            if (lastIndex < stringValue.Length)
             {
-                parts.Add(new LiteralExpression(_text.Substring(lastIndex, _position - lastIndex)));
+                parts.Add(new LiteralExpression(stringValue.Substring(lastIndex)));
             }
 
-            _position++; // Skip the closing quote.
-
-            // If there's no interpolation, return a simple LiteralExpression.
-            // Otherwise, return an InterpolatedStringExpression.
             if (parts.Count == 0)
-                return new LiteralExpression(string.Empty);
+                return new LiteralExpression(stringValue); // No interpolation was found.
+
+            // If the string consists of a single literal part, return it directly.
             if (parts.Count == 1 && parts[0] is LiteralExpression literal)
                 return literal;
 
             return new InterpolatedStringExpression(parts);
         }
 
-        private void SkipWhitespace()
-        {
-            while (_position < _text.Length && char.IsWhiteSpace(_text[_position]))
-                _position++;
-        }
+        // --- Token Stream Navigation Helpers ---
 
-        private string Peek(int startOffset, int count) =>
-            (_position + startOffset + count <= _text.Length) ?
-            _text.Substring(_position + startOffset, count) :
-            "";
+        private Token Current() => _tokens[_current];
+
+        private Token Previous() => _tokens[_current - 1];
+
+        private Token Advance() => !IsAtEnd() ? _tokens[_current++] : _tokens.Last();
+
+        private bool IsAtEnd() => _current < _tokens.Count && Current().Type == EOF;
+
+        private Token Consume(TokenType type, string message)
+        {
+            if (Current().Type == type)
+                return Advance();
+            throw new FormatException($"{message} (Found {Current().Type} at position {Current().Position})");
+        }
     }
 }
