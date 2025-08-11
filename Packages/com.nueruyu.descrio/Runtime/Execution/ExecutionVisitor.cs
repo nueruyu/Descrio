@@ -107,6 +107,30 @@ namespace Descrio.Execution
             return new ValueTask<object>(result);
         }
 
+        public async ValueTask<object> VisitAsync(UnaryExpression expression)
+        {
+            var operand = await expression.Operand.AcceptAsync(this);
+
+            switch (expression.OperatorType)
+            {
+                case OperatorType.Not:
+                    return !IsTruthy(operand);
+
+                case OperatorType.Subtract:
+                    if (operand is decimal d)
+                        return -d;
+                    if (operand is long l)
+                        return -l;
+                    if (operand is double db)
+                        return -db;
+                    // Or a more generic approach:
+                    return -Convert.ToDecimal(operand, CultureInfo.InvariantCulture);
+
+                default:
+                    throw new InvalidOperationException($"Unary operator '{expression.OperatorType}' is not supported.");
+            }
+        }
+
         public async ValueTask<object> VisitAsync(BinaryExpression expression)
         {
             var left = await expression.Left.AcceptAsync(this);
@@ -116,6 +140,20 @@ namespace Descrio.Execution
             {
                 switch (expression.OperatorType)
                 {
+                    case OperatorType.Add:
+                        return numLeft + numRight;
+
+                    case OperatorType.Subtract:
+                        return numLeft - numRight;
+
+                    case OperatorType.Multiply:
+                        return numLeft * numRight;
+
+                    case OperatorType.Divide:
+                        if (numRight == 0)
+                            throw new DivideByZeroException();
+                        return numLeft / numRight;
+
                     case OperatorType.Equal:
                         return numLeft == numRight;
 

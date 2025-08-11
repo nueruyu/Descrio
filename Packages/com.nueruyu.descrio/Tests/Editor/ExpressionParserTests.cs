@@ -6,166 +6,190 @@ using System;
 
 namespace Descrio.EditorTests
 {
+    [TestFixture]
     public class ExpressionParserTests
     {
-        private ExecutionContext _emptyContext;
-        private IAstVisitor _visitor;
+        private ExecutionContext _testContext;
 
         [SetUp]
         public void SetUp()
         {
+            // Prepare a context with some variables for general use in tests.
             var varRegistry = new VariableRegistry();
-            varRegistry.Set("name", "Descrio");
-            varRegistry.Set("version", "1.0");
+            varRegistry.Set("x", 10L);
+            varRegistry.Set("y", 20L);
+            varRegistry.Set("t", true);
+            varRegistry.Set("f", false);
+            varRegistry.Set("s", "Descrio");
 
-            // Create a default context and visitor for each test.
-            _emptyContext = new ExecutionContext(new ModulePath("/"), new CallableRegistry(), varRegistry);
-            _visitor = new ExecutionVisitor(_emptyContext);
+            _testContext = new ExecutionContext(new ModulePath("/"), new CallableRegistry(), varRegistry);
         }
 
+        // Helper to parse and evaluate an expression with a given context
+        private async Task<object> Evaluate(string source, ExecutionContext context)
+        {
+            var parser = new ExpressionParser(source);
+            var expression = parser.Parse();
+            return await expression.AcceptAsync(new ExecutionVisitor(context));
+        }
+
+        // Helper to evaluate with the default test context
+        private async Task<object> Evaluate(string source)
+        {
+            return await Evaluate(source, _testContext);
+        }
+
+        [Test]
         [TestCase("123", 123L)]
-        [TestCase("'hello'", "hello")]
+        [TestCase("'hello world'", "hello world")]
+        [TestCase("\"double quotes\"", "double quotes")]
         [TestCase("true", true)]
-        public async Task Parse_ShouldHandleLiterals(string input, object expectedValue)
+        [TestCase("false", false)]
+        [TestCase("null", null)]
+        public async Task Parse_Literals_ShouldEvaluateToCorrectTypes(string source, object expected)
         {
-            var expression = new ExpressionParser(input).Parse();
-            var result = await expression.AcceptAsync(_visitor);
-            Assert.AreEqual(expectedValue, result);
+            Assert.AreEqual(expected, await Evaluate(source));
         }
 
         [Test]
-        public async Task Parse_ShouldHandleVariable()
+        public async Task Parse_Variable_ShouldEvaluateToItsValue()
         {
-            // Setup a context with a variable.
-            var varRegistry = new VariableRegistry();
-            varRegistry.Set("my_variable", "test_value");
-            var context = new ExecutionContext(new ModulePath("/"), new CallableRegistry(), varRegistry);
-            var visitor = new ExecutionVisitor(context);
-
-            var expression = new ExpressionParser("my_variable").Parse();
-            var result = await expression.AcceptAsync(visitor);
-
-            Assert.AreEqual("test_value", result);
+            Assert.AreEqual(10L, await Evaluate("x"));
+            Assert.AreEqual("Descrio", await Evaluate("s"));
         }
 
         [Test]
-        public async Task Parse_ShouldReturnNullForUndefinedVariable()
+        public async Task Parse_UndefinedVariable_ShouldEvaluateToNull()
         {
-            var expression = new ExpressionParser("undefined_variable").Parse();
-            var result = await expression.AcceptAsync(_visitor);
-            Assert.IsNull(result);
+            Assert.AreEqual(null, await Evaluate("undefined_variable"));
         }
 
+        [Test]
+        [TestCase("5 + 3", 8L)]
+        [TestCase("10 - 4", 6L)]
+        [TestCase("6 * 7", 42L)]
+        [TestCase("42 / 6", 7L)]
+        [TestCase("2 + 3 * 4", 14L)]
+        [TestCase("(2 + 3) * 4", 20L)]
+        [TestCase("100 / 10 / 2", 5L)] // Left-associativity
+        public async Task Parse_ArithmeticExpressions_ShouldRespectPrecedenceAndAssociativity(string source, long expected)
+        {
+            var result = await Evaluate(source);
+            Assert.AreEqual(Convert.ToDecimal(expected), Convert.ToDecimal(result));
+        }
+
+        [Test]
+        [TestCase("10 > 5", true)]
+        [TestCase("10 < 5", false)]
+        [TestCase("10 >= 10", true)]
+        [TestCase("10 <= 5", false)]
+        [TestCase("x < y", true)]
+        [TestCase("x > y", false)]
+        public async Task Parse_ComparisonExpressions_ShouldEvaluateCorrectly(string source, bool expected)
+        {
+            Assert.AreEqual(expected, await Evaluate(source));
+        }
+
+        [Test]
         [TestCase("10 == 10", true)]
         [TestCase("10 == 20", false)]
-        [TestCase("'a' != 'b'", true)]
-        [TestCase("'a' != 'a'", false)]
-        [TestCase("true == true", true)]
-        public async Task Parse_ShouldEvaluateBinaryExpressions(string input, bool expected)
+        [TestCase("10 != 20", true)]
+        [TestCase("'a' == 'a'", true)]
+        [TestCase("t == true", true)]
+        [TestCase("f == false", true)]
+        [TestCase("s != 'Unity'", true)]
+        [TestCase("null == null", true)]
+        [TestCase("x != null", true)]
+        public async Task Parse_EqualityExpressions_ShouldEvaluateCorrectly(string source, bool expected)
         {
-            var expression = new ExpressionParser(input).Parse();
-            var result = await expression.AcceptAsync(_visitor);
-            Assert.AreEqual(expected, result);
+            Assert.AreEqual(expected, await Evaluate(source));
         }
 
         [Test]
-        public void Parse_ShouldHandleMultipleOperatorsWithLeftAssociativity()
+        [TestCase("!t", false)]
+        [TestCase("!f", true)]
+        [TestCase("!!t", true)]
+        [TestCase("!(x > y)", true)] // !(10 > 20) -> !false -> true
+        public async Task Parse_UnaryExpressions_ShouldEvaluateCorrectly(string source, bool expected)
         {
-            // This test checks the structural correctness of the parse tree.
-            var expression = new ExpressionParser("var1 == var2 != true").Parse();
+            Assert.AreEqual(expected, await Evaluate(source));
+        }
 
-            Assert.IsInstanceOf<BinaryExpression>(expression);
-            var rootExpr = (BinaryExpression)expression;
-            Assert.AreEqual(OperatorType.NotEqual, rootExpr.OperatorType);
-
-            Assert.IsInstanceOf<BinaryExpression>(rootExpr.Left);
-            var nestedExpr = (BinaryExpression)rootExpr.Left;
-            Assert.AreEqual(OperatorType.Equal, nestedExpr.OperatorType);
+        [Test, TestCase("-10", -10L)]
+        [TestCase("-x", -10L)]
+        [TestCase("5 * -2", -10L)]
+        [TestCase("-5 - -2", -3L)]
+        public async Task Parse_UnaryMinus_ShouldEvaluateCorrectly(string source, long expected)
+        {
+            var result = await Evaluate(source);
+            Assert.AreEqual(Convert.ToDecimal(expected), Convert.ToDecimal(result));
         }
 
         [Test]
-        public void Parse_ShouldHandleWhitespace()
+        public async Task Parse_ComplexCombinedExpression_ShouldEvaluateCorrectly()
         {
-            var expression = new ExpressionParser("  my_var   ==   'test'  ").Parse();
-            Assert.IsInstanceOf<BinaryExpression>(expression);
-        }
-
-        // --- Tests for String Interpolation ---
-
-        [Test]
-        public async Task Parse_ShouldHandleSimpleInterpolatedString()
-        {
-            var expression = new ExpressionParser("'Hello, ${name}!'").Parse();
-            var result = await expression.AcceptAsync(_visitor);
-            Assert.AreEqual("Hello, Descrio!", result);
+            // (10 * 2) + (20 / 2) == 30 -> 20 + 10 == 30 -> 30 == 30 -> true
+            Assert.AreEqual(true, await Evaluate("(x * 2) + (y / 2) == 30"));
         }
 
         [Test]
-        public async Task Parse_ShouldHandleMultipleInterpolations()
+        public async Task Parse_VeryComplexExpression_ShouldRespectAllPrecedences()
         {
-            var expression = new ExpressionParser("'Project: ${name}, Version: ${version}'").Parse();
-            var result = await expression.AcceptAsync(_visitor);
-            Assert.AreEqual("Project: Descrio, Version: 1.0", result);
+            // !false == (2 + (3 * 4) > 10 + 1)
+            // true == (2 + 12 > 11)
+            // true == (14 > 11)
+            // true == true
+            // -> true
+            var source = "!f == (2 + 3 * 4 > 10 + 1)";
+            Assert.AreEqual(true, await Evaluate(source));
         }
 
         [Test]
-        public async Task Parse_ShouldHandleInterpolationAtStartAndEnd()
+        [TestCase("'Hello, ${s}!'", "Hello, Descrio!")]
+        [TestCase("'x=${x}, y=${y}'", "x=10, y=20")]
+        [TestCase("'${s} is version ${1 + 0.1}'", "Descrio is version 1.1")]
+        [TestCase("'Result is ${x > y}'", "Result is False")]
+        [TestCase("'${s}'", "Descrio")] // Full string is an expression
+        [TestCase("'${s} ${s}'", "Descrio Descrio")]
+        public async Task Parse_StringInterpolation_ShouldEvaluateCorrectly(string source, string expected)
         {
-            var expression = new ExpressionParser("'${name} is version ${version}'").Parse();
-            var result = await expression.AcceptAsync(_visitor);
-            Assert.AreEqual("Descrio is version 1.0", result);
+            Assert.AreEqual(expected, await Evaluate(source));
         }
 
         [Test]
-        public async Task Parse_ShouldReturnSimpleStringWhenNoInterpolation()
+        public async Task Parse_NestedStringInterpolation_ShouldEvaluateCorrectly()
         {
-            var expression = new ExpressionParser("'Just a simple string.'").Parse();
-            // It should be a LiteralExpression, not an InterpolatedStringExpression
-            Assert.IsInstanceOf<LiteralExpression>(expression);
-            var result = await expression.AcceptAsync(_visitor);
-            Assert.AreEqual("Just a simple string.", result);
-        }
-
-        [Test]
-        public async Task Parse_ShouldHandleEmptyString()
-        {
-            var expression = new ExpressionParser("''").Parse();
-            Assert.IsInstanceOf<LiteralExpression>(expression);
-            var result = await expression.AcceptAsync(_visitor);
-            Assert.AreEqual(string.Empty, result);
-        }
-
-        [Test]
-        public async Task Parse_ShouldHandleEmptyInterpolation()
-        {
-            var expression = new ExpressionParser("'Hello, ${}'").Parse();
-            var result = await expression.AcceptAsync(_visitor);
-            // Assuming an empty expression evaluates to null, and ToString() on null is an empty string.
-            Assert.AreEqual("Hello, ", result);
-        }
-
-        [Test]
-        public async Task Parse_ShouldHandleComplexExpressionInsideInterpolation()
-        {
-            // Setup a context with numeric variables for the binary expression
             var varRegistry = new VariableRegistry();
-            varRegistry.Set("a", 10);
-            varRegistry.Set("b", 20);
+            varRegistry.Set("inner", "World");
             var context = new ExecutionContext(new ModulePath("/"), new CallableRegistry(), varRegistry);
-            var visitor = new ExecutionVisitor(context);
 
-            var expression = new ExpressionParser("'Result is ${a == b}'").Parse();
-            var result = await expression.AcceptAsync(visitor);
-            Assert.AreEqual("Result is False", result);
+            var source = "'Hello, ${ \"${inner}!\" }'";
+            Assert.AreEqual("Hello, World!", await Evaluate(source, context));
         }
 
         [Test]
-        public void Parse_ShouldThrowFormatExceptionOnUnterminatedExpression()
+        public async Task Parse_EmptyAndSimpleStrings_ShouldBeLiteral()
         {
-            Assert.Throws<FormatException>(() =>
-            {
-                new ExpressionParser("'Hello, ${name'").Parse();
-            });
+            var emptyParser = new ExpressionParser("''");
+            Assert.IsInstanceOf<LiteralExpression>(emptyParser.Parse());
+            Assert.AreEqual("", await Evaluate("''"));
+
+            var simpleParser = new ExpressionParser("'Just a test'");
+            Assert.IsInstanceOf<LiteralExpression>(simpleParser.Parse());
+            Assert.AreEqual("Just a test", await Evaluate("'Just a test'"));
+        }
+
+        [Test]
+        [TestCase("5 +", "Unexpected end of expression.")]
+        [TestCase("(10 + 5", "Expect ')' after expression.")]
+        [TestCase("5 * (2 + 3))", "Unexpected token ')' found after the expression.")]
+        [TestCase("'Hello, ${name'", "Unterminated expression in interpolated string.")]
+        [TestCase("x + y *", "Unexpected end of expression.")]
+        [TestCase("* 5", "Expected an expression but found '*' at position 0.")]
+        public void Parse_InvalidSyntax_ShouldThrowFormatException(string source, string expectedMessageFragment)
+        {
+            var ex = Assert.Throws<FormatException>(() => new ExpressionParser(source).Parse());
+            StringAssert.Contains(expectedMessageFragment, ex.Message);
         }
     }
 }
