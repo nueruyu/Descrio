@@ -114,5 +114,28 @@ namespace Descrio.EditorTests
             var ex = Assert.Throws<FormatException>(() => Scan(source));
             StringAssert.Contains("Unexpected character '='", ex.Message);
         }
+
+        [Test]
+        public void Scan_StringWithEscapeSequences_ShouldBeUnescapedCorrectly()
+        {
+            // String contains: It's a "test" with a \ backslash.
+            var source = @"'It\'s a \""test\"" with a \\ backslash.'";
+            var tokens = Scan(source);
+
+            Assert.AreEqual(1, tokens.Count);
+            Assert.AreEqual(STRING, tokens[0].Type);
+            Assert.AreEqual("It's a \"test\" with a \\ backslash.", tokens[0].Literal);
+        }
+
+        [Test]
+        public void Scan_StringWithSpecialChars_ShouldBeUnescapedCorrectly()
+        {
+            var source = "'Line1\\nLine2\\tTabbed'";
+            var tokens = Scan(source);
+
+            Assert.AreEqual(1, tokens.Count);
+            Assert.AreEqual(STRING, tokens[0].Type);
+            Assert.AreEqual("Line1\nLine2\tTabbed", tokens[0].Literal);
+        }
     }
 }

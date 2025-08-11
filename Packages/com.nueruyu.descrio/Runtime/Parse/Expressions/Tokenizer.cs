@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using static Descrio.Parse.Expressions.TokenType;
 
 namespace Descrio.Parse.Expressions
@@ -169,10 +170,52 @@ namespace Descrio.Parse.Expressions
 
         private void StringLiteral(char quoteType)
         {
-            // Consume characters until the closing quote is found.
+            var valueBuilder = new StringBuilder();
+
             while (Peek() != quoteType && !IsAtEnd())
             {
-                Advance();
+                char c = Advance();
+
+                // Handle escape character
+                if (c == '\\')
+                {
+                    if (IsAtEnd())
+                        break; // Avoid index out of bounds on trailing backslash
+
+                    char escaped = Advance();
+                    switch (escaped)
+                    {
+                        case '\'':
+                            valueBuilder.Append('\'');
+                            break;
+
+                        case '"':
+                            valueBuilder.Append('"');
+                            break;
+
+                        case '\\':
+                            valueBuilder.Append('\\');
+                            break;
+
+                        case 'n':
+                            valueBuilder.Append('\n');
+                            break;
+
+                        case 't':
+                            valueBuilder.Append('\t');
+                            break;
+                        // For any other character, just append the backslash and the character itself.
+                        // This is a common behavior. e.g., "\c" becomes "c" or "\c".
+                        // Let's just append the escaped character for simplicity.
+                        default:
+                            valueBuilder.Append(escaped);
+                            break;
+                    }
+                }
+                else
+                {
+                    valueBuilder.Append(c);
+                }
             }
 
             if (IsAtEnd())
@@ -183,9 +226,7 @@ namespace Descrio.Parse.Expressions
             // Consume the closing quote.
             Advance();
 
-            // Extract the string value, without the surrounding quotes.
-            string value = _source.Substring(_start + 1, _current - _start - 2);
-            AddToken(STRING, value);
+            AddToken(STRING, valueBuilder.ToString());
         }
 
         // --- Helper Methods ---
