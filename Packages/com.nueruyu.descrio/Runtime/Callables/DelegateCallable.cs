@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -6,14 +7,14 @@ namespace Descrio
 {
     public class DelegateCallable : ICallable
     {
-        private readonly Func<object[], ExecutionContext, ValueTask<object>> _function;
+        private readonly Func<Arguments, ExecutionContext, ValueTask<object>> _function;
 
-        public DelegateCallable(Func<object[], ExecutionContext, ValueTask<object>> function)
+        public DelegateCallable(Func<Arguments, ExecutionContext, ValueTask<object>> function)
         {
             _function = function ?? throw new ArgumentNullException(nameof(function));
         }
 
-        public DelegateCallable(Func<object[], CancellationToken, ValueTask<object>> function)
+        public DelegateCallable(Func<Arguments, CancellationToken, ValueTask<object>> function)
         {
             if (function == null)
                 throw new ArgumentNullException(nameof(function));
@@ -21,7 +22,7 @@ namespace Descrio
             _function = (args, context) => function(args, context.CancellationToken);
         }
 
-        public DelegateCallable(Func<object[], ExecutionContext, ValueTask> function)
+        public DelegateCallable(Func<Arguments, ExecutionContext, ValueTask> function)
         {
             if (function == null)
                 throw new ArgumentNullException(nameof(function));
@@ -33,7 +34,7 @@ namespace Descrio
             };
         }
 
-        public DelegateCallable(Func<object[], CancellationToken, ValueTask> function)
+        public DelegateCallable(Func<Arguments, CancellationToken, ValueTask> function)
         {
             if (function == null)
                 throw new ArgumentNullException(nameof(function));
@@ -45,7 +46,7 @@ namespace Descrio
             };
         }
 
-        public ValueTask<object> CallAsync(object[] args, ExecutionContext context)
+        public ValueTask<object> CallAsync(Arguments args, ExecutionContext context)
         {
             return _function.Invoke(args, context);
         }

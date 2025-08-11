@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -5,6 +6,6 @@ namespace Descrio
 {
     public interface ICallable
     {
-        ValueTask<object> CallAsync(object[] args, ExecutionContext context);
+        ValueTask<object> CallAsync(Arguments args, ExecutionContext context);
     }
 }

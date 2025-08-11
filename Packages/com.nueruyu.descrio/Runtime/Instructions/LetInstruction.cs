@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 
 namespace Descrio
 {
-    public class SetInstruction : IInstruction
+    public class LetInstruction : IInstruction
     {
         public string Name { get; }
         public IExpression ValueExpression { get; }
 
-        public SetInstruction(string name, IExpression valueExpression)
+        public LetInstruction(string name, IExpression valueExpression)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             ValueExpression = valueExpression ?? throw new ArgumentNullException(nameof(valueExpression));
