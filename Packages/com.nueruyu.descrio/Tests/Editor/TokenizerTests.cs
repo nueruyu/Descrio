@@ -3,6 +3,7 @@ using Descrio.Parse.Expressions;
 using System.Collections.Generic;
 using System.Linq;
 using static Descrio.Parse.Expressions.TokenType;
+using System;
 
 namespace Descrio.EditorTests
 {
@@ -94,6 +95,24 @@ namespace Descrio.EditorTests
             var expectedTypes = new[] { TRUE, IDENTIFIER, FALSE, IDENTIFIER, NULL, IDENTIFIER };
             CollectionAssert.AreEqual(expectedTypes, tokens.Select(t => t.Type).ToList());
             Assert.AreEqual("TRUE", tokens[1].Lexeme);
+        }
+
+        [Test]
+        public void Scan_DoubleEquals_ShouldProduceEqualityToken()
+        {
+            var source = "==";
+            var tokens = Scan(source);
+
+            Assert.AreEqual(1, tokens.Count, "Should produce a single token.");
+            Assert.AreEqual(EQUAL_EQUAL, tokens[0].Type);
+        }
+
+        [Test]
+        public void Scan_SingleEquals_ShouldThrowFormatException()
+        {
+            var source = "x = 5";
+            var ex = Assert.Throws<FormatException>(() => Scan(source));
+            StringAssert.Contains("Unexpected character '='", ex.Message);
         }
     }
 }

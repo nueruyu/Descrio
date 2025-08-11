@@ -81,7 +81,15 @@ namespace Descrio.Parse.Expressions
                     break;
 
                 case '=':
-                    AddToken(Match('=') ? EQUAL_EQUAL : EQUAL_EQUAL);
+                    if (Match('='))
+                    {
+                        AddToken(EQUAL_EQUAL);
+                    }
+                    else
+                    {
+                        // A single '=' is not a valid operator in our expression language.
+                        throw new FormatException($"Unexpected character '{c}' at position {_current - 1}. Did you mean '=='?");
+                    }
                     break;
 
                 case '<':
