@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
@@ -15,51 +16,51 @@ namespace Descrio.Execution
             _context = context;
         }
 
-        public async ValueTask VisitAsync(SetInstruction instruction)
+        public async ValueTask VisitAsync(LetInstruction instruction)
         {
             var value = await instruction.ValueExpression.AcceptAsync(this);
             _context.Variables.Set(instruction.Name, value);
         }
 
-        public async ValueTask VisitAsync(CallInstruction instruction)
+        public async ValueTask<object> VisitAsync(RunInstruction instruction)
         {
             if (!_context.Callables.TryGet(instruction.Name, out var callable))
                 throw new InvalidOperationException($"Callable '{instruction.Name}' not found.");
 
-            var args = new object[instruction.ArgExpressions.Length];
-            for (var i = 0; i < instruction.ArgExpressions.Length; i++)
+            var args = new Arguments();
+            foreach (var (key, valueExpr) in instruction.ArgExpressions)
             {
-                args[i] = await instruction.ArgExpressions[i].AcceptAsync(this);
+                args[key] = await valueExpr.AcceptAsync(this);
             }
 
-            var result = await callable.CallAsync(args, _context);
-
-            if (!string.IsNullOrEmpty(instruction.ReturnVariable))
-            {
-                _context.Variables.Set(instruction.ReturnVariable, result);
-            }
+            return await callable.CallAsync(args, _context);
         }
 
-        public ValueTask VisitAsync(DefineInstruction instruction)
+        public ValueTask VisitAsync(FunctionInstruction instruction)
         {
-            async ValueTask<object> CallAsync(object[] args, ExecutionContext context)
+            async ValueTask<object> CallAsync(Arguments args, ExecutionContext context)
             {
                 var localContext = context.CreateChildContext();
 
-                for (var i = 0; i < instruction.Parameters.Length; i++)
+                foreach (var param in instruction.Parameters)
                 {
-                    var param = instruction.Parameters[i];
-                    var value = (i < args.Length) ? args[i] : param.DefaultValue;
-                    localContext.Variables.Set(param.Name, value);
+                    if (args.TryGetValue(param.Name, out var value))
+                    {
+                        localContext.Variables.Set(param.Name, value);
+                    }
+                    else
+                    {
+                        localContext.Variables.Set(param.Name, param.DefaultValue);
+                    }
                 }
 
                 var visitor = new ExecutionVisitor(localContext);
-                foreach (var instruction in instruction.Statements)
+                foreach (var statement in instruction.Statements)
                 {
-                    await instruction.AcceptAsync(visitor);
+                    await statement.AcceptAsync(visitor);
                 }
 
-                // TODO: return命令が実行された場合、その値を返す
+                // TODO: return命令
                 return null;
             }
 

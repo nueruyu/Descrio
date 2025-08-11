@@ -7,7 +7,7 @@ namespace Descrio.Yaml.Nodes
     internal class WhenCaseBlockNode
     {
         [YamlMember(Alias = "condition")]
-        public IExpression Condition { get; set; }
+        public IExpressionNode Condition { get; set; }
 
         [YamlMember(Alias = "then")]
         public List<IInstructionNode> ThenBlock { get; set; }
@@ -15,7 +15,7 @@ namespace Descrio.Yaml.Nodes
         public WhenCaseBlock ToCaseBlock()
         {
             var instructions = ThenBlock?.Select(s => s.ToInstruction()).ToArray() ?? System.Array.Empty<IInstruction>();
-            return new WhenCaseBlock(Condition, instructions);
+            return new WhenCaseBlock(Condition?.ToExpression(), instructions);
         }
     }
 }

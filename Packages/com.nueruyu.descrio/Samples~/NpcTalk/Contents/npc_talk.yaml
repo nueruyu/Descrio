@@ -1,33 +1,37 @@
 statements:
-  - !call
+  - !run
     name: ShowMessage
     args:
-      - 'Welcome. I am a guide.'
+      text: 'Welcome. I am a guide.'
 
-  - !call
+  - !run
     name: ShowMessage
     args:
-      - 'I can help you with your task. What would you like to do?'
+      text: 'I can help you with your task. What would you like to do?'
 
-  - !call
-    name: ShowChoices
-    args:
-      - ['Ask about this system', 'Explore the area', 'Leave']
-    return: choice_index # Store the returned index in 'choice_index'
+  - !let
+    name: choice_index
+    value: !run
+      name: ShowChoices
+      args:
+        choices: ['Ask about this system', 'Explore the area', 'Leave']
 
   - !when
     cases:
-      - condition: ${choice_index == 0}
+      - condition: !expr choice_index == 0
         then:
-          - !call
+          - !run
             name: ShowMessage
-            args: ['This system allows logic to be defined via simple text files.']
-      - condition: ${choice_index == 1}
+            args:
+              text: 'This system allows logic to be defined via simple text files.'
+      - condition: !expr choice_index == 1
         then:
-          - !call
+          - !run
             name: ShowMessage
-            args: ['You look around. It is a quiet and peaceful place.']
-      - then: # Default case for choice_index == 2 or any other value
-          - !call
+            args:
+              text: 'You look around. It is a quiet and peaceful place.'
+      - then:
+          - !run
             name: ShowMessage
-            args: ['Farewell.']
+            args:
+              text: 'Farewell.'

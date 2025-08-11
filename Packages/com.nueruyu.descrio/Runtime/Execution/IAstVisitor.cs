@@ -4,11 +4,11 @@ namespace Descrio.Execution
 {
     public interface IAstVisitor
     {
-        ValueTask VisitAsync(SetInstruction instruction);
+        ValueTask VisitAsync(LetInstruction instruction);
 
-        ValueTask VisitAsync(CallInstruction instruction);
+        ValueTask<object> VisitAsync(RunInstruction instruction);
 
-        ValueTask VisitAsync(DefineInstruction instruction);
+        ValueTask VisitAsync(FunctionInstruction instruction);
 
         ValueTask VisitAsync(WhenInstruction instruction);
 

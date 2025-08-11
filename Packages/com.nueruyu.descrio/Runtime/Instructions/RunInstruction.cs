@@ -6,20 +6,23 @@ using Descrio.Execution;
 
 namespace Descrio
 {
-    public class CallInstruction : IInstruction
+    public class RunInstruction : IInstruction, IExpression
     {
         public string Name { get; }
-        public IExpression[] ArgExpressions { get; }
-        public string ReturnVariable { get; }
+        public IReadOnlyDictionary<string, IExpression> ArgExpressions { get; }
 
-        public CallInstruction(string name, IExpression[] argExpressions, string returnVariable = null)
+        public RunInstruction(string name, IReadOnlyDictionary<string, IExpression> argExpressions)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             ArgExpressions = argExpressions ?? throw new ArgumentNullException(nameof(argExpressions));
-            ReturnVariable = returnVariable;
         }
 
-        public ValueTask AcceptAsync(IAstVisitor visitor)
+        async ValueTask IInstruction.AcceptAsync(IAstVisitor visitor)
+        {
+            await visitor.VisitAsync(this);
+        }
+
+        ValueTask<object> IExpression.AcceptAsync(IAstVisitor visitor)
         {
             return visitor.VisitAsync(this);
         }
