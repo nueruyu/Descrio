@@ -2,42 +2,77 @@
 
 
 ```yaml
-import:
-- path/to/another_file
+imports:
+  - path/to/another_file
 
 statements:
-
-- !define
-  name: func
-  params:
-    initial_health:
-      type: int
-      default: 100
-  statements:
-  - !set
-    name: health
-    value: ${initial_health}
-  - !call
-    name: print
-    args: ["Hello"]
-  - !when
-    cases:
-    - condition: ${health > 50}
-      then:
-        - !call
-          name: wait
-          args: [1.0]
-          
-- !define
-  name: main
-  statements:
-  - !call
+  - !function
     name: func
-    args: [120]
-  - !call
-    name: print
-    args: ["End"]
+    parameters:
+      - name: initial_health
+        type: int
+        default: 100
+    statements:
+      - !let
+        name: health
+        value: !expr initial_health
 
-- !call
-  name: main
+      - !run
+        name: print
+        args:
+          text: "Hello"
+
+      - !when
+        cases:
+          - condition: !expr health > 50
+            then:
+              - !run
+                name: delay
+                args:
+                  time: 1.0
+
+  - !function
+    name: main
+    statements:
+      - !run 
+        name: func
+        args:
+          initial_health: 120
+
+      - !run
+        name: print
+        args:
+          text: "End"
+
+      - !let
+        name: choice_index
+        value: !run
+          name: show_choices
+          args:
+            choices:
+              - Option 1
+              - Option 2
+
+      - !when
+        cases:
+          - condition: !expr choice_index == 0
+            then:
+              - !run
+                name: print
+                args:
+                  text: "You chose Option 1."
+          - condition: !expr choice_index == 1
+            then:
+              - !run
+                name: print
+                args:
+                  text: "You chose Option 2."
+          - then:
+              - !run
+                name: print
+                args:
+                  text: "Farewell."
+
+  - !run
+    name: main
 ```
