@@ -22,7 +22,6 @@ namespace Descrio.Samples.NpcTalk
 
         private Label _messageLabel;
         private VisualElement _choicesContainer;
-        private TaskCompletionSource<object> _userInteractionTcs;
 
         private void OnEnable()
         {
@@ -101,42 +100,44 @@ namespace Descrio.Samples.NpcTalk
 
         // --- Built-in Callable Implementations ---
 
-        private async ValueTask ShowMessage(object[] args, CancellationToken ct)
+        private async ValueTask ShowMessage(Arguments args, CancellationToken ct)
         {
-            _messageLabel.text = args.Length > 0 ? args[0]?.ToString() : "";
+            _messageLabel.text = args.TryGetValue("text", out var text) ? text.ToString() : "";
             _choicesContainer.Clear();
 
+            var tcs = new TaskCompletionSource<object>();
+
             // Create a "Continue" button and wait for it to be clicked.
-            var continueButton = new Button(() => _userInteractionTcs?.TrySetResult(null)) { text = "Continue" };
+            var continueButton = new Button(() => tcs?.TrySetResult(null)) { text = "Continue" };
             _choicesContainer.Add(continueButton);
 
-            _userInteractionTcs = new TaskCompletionSource<object>();
-            await _userInteractionTcs.Task;
+            await tcs.Task;
 
             _choicesContainer.Clear();
         }
 
-        private async ValueTask<object> ShowChoices(object[] args, CancellationToken ct)
+        private async ValueTask<object> ShowChoices(Arguments args, CancellationToken ct)
         {
             _messageLabel.text = "Please make a choice.";
             _choicesContainer.Clear();
-            _userInteractionTcs = new TaskCompletionSource<object>();
 
-            if (args.Length > 0 && args[0] is IEnumerable choices)
+            var tcs = new TaskCompletionSource<object>();
+
+            if (args.TryGetValue("choices", out var choicesObj) && choicesObj is IEnumerable choices)
             {
                 var i = 0;
                 foreach (var choiceObj in choices)
                 {
                     var choice = choiceObj?.ToString() ?? "";
                     var index = i; // Capture index for the lambda
-                    var button = new Button(() => _userInteractionTcs?.TrySetResult(index)) { text = choice };
+                    var button = new Button(() => tcs?.TrySetResult(index)) { text = choice };
                     _choicesContainer.Add(button);
                     i++;
                 }
             }
 
             // Wait for a choice and return its index.
-            var result = await _userInteractionTcs.Task;
+            var result = await tcs.Task;
             _choicesContainer.Clear();
             return result;
         }
