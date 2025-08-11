@@ -17,5 +17,7 @@ namespace Descrio.Execution
         ValueTask<object> VisitAsync(VariableExpression expression);
 
         ValueTask<object> VisitAsync(BinaryExpression expression);
+
+        ValueTask<object> VisitAsync(InterpolatedStringExpression expression);
     }
 }

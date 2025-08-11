@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -147,6 +148,17 @@ namespace Descrio.Execution
                     throw new InvalidOperationException(
                         $"Operator '{expression.OperatorType}' cannot be applied to operands of type '{left?.GetType().Name ?? "null"}' and '{right?.GetType().Name ?? "null"}'.");
             }
+        }
+
+        public async ValueTask<object> VisitAsync(InterpolatedStringExpression expression)
+        {
+            var sb = new StringBuilder();
+            foreach (var part in expression.Parts)
+            {
+                var value = await part.AcceptAsync(this);
+                sb.Append(value?.ToString());
+            }
+            return sb.ToString();
         }
 
         private static bool IsTruthy(object value)
