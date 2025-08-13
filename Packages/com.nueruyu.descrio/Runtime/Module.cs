@@ -15,7 +15,7 @@ namespace Descrio
         public IInstruction[] Statements { get; }
         public IReadOnlyList<string> ImportPaths { get; }
 
-        public async ValueTask AcceptAsync(IAstVisitor visitor)
+        public async ValueTask AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
         {
             foreach (var statement in Statements)
             {

@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using Descrio.Yaml.Nodes;
-using Descrio.Yaml.Deserializers;
+using Descrio.Yaml.Serialization;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using Descrio.Parse;
@@ -16,12 +16,27 @@ namespace Descrio.Yaml
         {
             _deserializer = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
-                .WithTagMapping("!set", typeof(SetNode))
-                .WithTagMapping("!call", typeof(CallNode))
-                .WithTagMapping("!define", typeof(DefineNode))
+                .WithTagMapping("!let", typeof(LetNode))
+                .WithTagMapping("!var", typeof(VarNode))
+                .WithTagMapping("!assign", typeof(AssignNode))
+                .WithTagMapping("!run", typeof(RunNode))
+                .WithTagMapping("!dispatch", typeof(DispatchNode))
+                .WithTagMapping("!function", typeof(FunctionNode))
                 .WithTagMapping("!when", typeof(WhenNode))
-                .WithNodeDeserializer(new ExpressionDeserializer(), s => s.OnTop())
-                .WithNodeDeserializer(new ParameterDefinitionDeserializer(), s => s.OnTop())
+                .WithTagMapping("!for", typeof(ForNode))
+                .WithTagMapping("!while", typeof(WhileNode))
+                .WithTagMapping("!return", typeof(ReturnNode))
+                .WithTagMapping("!break", typeof(BreakNode))
+                .WithTagMapping("!continue", typeof(ContinueNode))
+                .WithTagMapping("!expr", typeof(ExpressionStringNode))
+                .WithTagMapping("!match", typeof(MatchNode))
+                .WithTagMapping("!try", typeof(TryCatchNode))
+                .WithTagMapping("!throw", typeof(ThrowNode))
+                .WithTagMapping("!assert", typeof(AssertNode))
+                .WithNodeDeserializer(new ExpressionNodeDeserializer(), s => s.OnTop())
+                .WithTypeConverter(new ExpressionStringNodeTypeConverter())
+                .WithTypeConverter(new ContinueNodeTypeConverter())
+                .WithTypeConverter(new BreakNodeTypeConverter())
                 .Build();
         }
 

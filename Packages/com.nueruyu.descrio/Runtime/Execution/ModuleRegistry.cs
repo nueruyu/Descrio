@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Descrio
+namespace Descrio.Execution
 {
     public class ModuleRegistry
     {
