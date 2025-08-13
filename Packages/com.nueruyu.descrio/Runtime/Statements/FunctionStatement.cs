@@ -5,22 +5,17 @@ using System.Threading.Tasks;
 
 namespace Descrio
 {
-    public class FunctionInstruction : IInstruction
+    public class FunctionStatement : IStatement
     {
         public string Name { get; }
         public ParameterDefinition[] Parameters { get; }
-        public IInstruction[] Statements { get; }
+        public IStatement[] Statements { get; }
 
-        public FunctionInstruction(string name, ParameterDefinition[] parameters, IInstruction[] statements)
+        public FunctionStatement(string name, ParameterDefinition[] parameters, IStatement[] statements)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
             Statements = statements ?? throw new ArgumentNullException(nameof(statements));
-        }
-
-        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
-        {
-            return visitor.VisitAsync(this);
         }
     }
 }

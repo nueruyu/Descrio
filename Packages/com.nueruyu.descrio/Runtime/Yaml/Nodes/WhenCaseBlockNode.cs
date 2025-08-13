@@ -10,11 +10,11 @@ namespace Descrio.Yaml.Nodes
         public IExpressionNode Condition { get; set; }
 
         [YamlMember(Alias = "then")]
-        public List<IInstructionNode> ThenBlock { get; set; }
+        public List<IStatementNode> ThenBlock { get; set; }
 
         public WhenCaseBlock ToCaseBlock()
         {
-            var instructions = ThenBlock?.Select(s => s.ToInstruction()).ToArray() ?? System.Array.Empty<IInstruction>();
+            var instructions = ThenBlock?.Select(s => s.ToStatement()).ToArray() ?? System.Array.Empty<IStatement>();
             return new WhenCaseBlock(Condition?.ToExpression(), instructions);
         }
     }

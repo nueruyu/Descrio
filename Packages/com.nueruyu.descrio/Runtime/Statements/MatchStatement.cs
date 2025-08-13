@@ -10,9 +10,9 @@ namespace Descrio
     public class MatchCaseBlock
     {
         public object CaseValue { get; }
-        public IInstruction[] ThenBlock { get; }
+        public IStatement[] ThenBlock { get; }
 
-        public MatchCaseBlock(object caseValue, IInstruction[] thenBlock)
+        public MatchCaseBlock(object caseValue, IStatement[] thenBlock)
         {
             CaseValue = caseValue;
             ThenBlock = thenBlock;
@@ -22,22 +22,17 @@ namespace Descrio
     /// <summary>
     /// Represents a !match instruction that executes a block of code based on value equality.
     /// </summary>
-    public class MatchInstruction : IInstruction
+    public class MatchStatement : IStatement
     {
         public IExpression ValueExpression { get; }
         public IReadOnlyList<MatchCaseBlock> Cases { get; }
-        public IInstruction[] DefaultBlock { get; }
+        public IStatement[] DefaultBlock { get; }
 
-        public MatchInstruction(IExpression valueExpression, IReadOnlyList<MatchCaseBlock> cases, IInstruction[] defaultBlock)
+        public MatchStatement(IExpression valueExpression, IReadOnlyList<MatchCaseBlock> cases, IStatement[] defaultBlock)
         {
             ValueExpression = valueExpression;
             Cases = cases;
             DefaultBlock = defaultBlock;
-        }
-
-        public ValueTask<VisitResult> AcceptAsync<VisitResult>(IAstVisitor<VisitResult> visitor)
-        {
-            return visitor.VisitAsync(this);
         }
     }
 }

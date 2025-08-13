@@ -3,7 +3,7 @@ using YamlDotNet.Serialization;
 
 namespace Descrio.Yaml.Nodes
 {
-    internal class ForNode : IInstructionNode
+    internal class ForNode : IStatementNode
     {
         [YamlMember(Alias = "in")]
         public IExpressionNode In { get; set; }
@@ -12,12 +12,12 @@ namespace Descrio.Yaml.Nodes
         public string As { get; set; }
 
         [YamlMember(Alias = "statements")]
-        public IInstructionNode[] Statements { get; set; } = System.Array.Empty<IInstructionNode>();
+        public IStatementNode[] Statements { get; set; } = System.Array.Empty<IStatementNode>();
 
-        public IInstruction ToInstruction()
+        public IStatement ToStatement()
         {
-            var instructions = Statements.Select(s => s.ToInstruction()).ToArray();
-            return new ForInstruction(In.ToExpression(), As, instructions);
+            var instructions = Statements.Select(s => s.ToStatement()).ToArray();
+            return new ForStatement(In.ToExpression(), As, instructions);
         }
     }
 }

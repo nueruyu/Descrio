@@ -16,10 +16,5 @@ namespace Descrio
             ObjectExpression = objectExpression;
             MemberName = memberName;
         }
-
-        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
-        {
-            return visitor.VisitAsync(this);
-        }
     }
 }

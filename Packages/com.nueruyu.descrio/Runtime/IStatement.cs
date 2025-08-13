@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Descrio
 {
-    public interface IExpression
+    public interface IStatement
     {
     }
 }

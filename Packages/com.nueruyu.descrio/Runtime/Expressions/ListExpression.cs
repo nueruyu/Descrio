@@ -13,10 +13,5 @@ namespace Descrio
         {
             Elements = elements ?? new List<IExpression>();
         }
-
-        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
-        {
-            return visitor.VisitAsync(this);
-        }
     }
 }

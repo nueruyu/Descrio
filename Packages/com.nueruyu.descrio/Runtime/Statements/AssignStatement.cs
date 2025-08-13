@@ -3,20 +3,15 @@ using System.Threading.Tasks;
 
 namespace Descrio
 {
-    public class VarInstruction : IInstruction
+    public class AssignStatement : IStatement
     {
         public string Name { get; }
         public IExpression ValueExpression { get; }
 
-        public VarInstruction(string name, IExpression valueExpression)
+        public AssignStatement(string name, IExpression valueExpression)
         {
             Name = name;
             ValueExpression = valueExpression;
-        }
-
-        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
-        {
-            return visitor.VisitAsync(this);
         }
     }
 }

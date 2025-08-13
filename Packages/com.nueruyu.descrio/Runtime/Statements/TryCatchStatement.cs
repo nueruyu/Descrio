@@ -11,9 +11,9 @@ namespace Descrio
     {
         public string ErrorName { get; }
         public string VariableName { get; }
-        public IInstruction[] ThenBlock { get; }
+        public IStatement[] ThenBlock { get; }
 
-        public CatchClause(string errorName, string variableName, IInstruction[] thenBlock)
+        public CatchClause(string errorName, string variableName, IStatement[] thenBlock)
         {
             ErrorName = errorName; // Can be null for a default catch-all
             VariableName = variableName;
@@ -24,22 +24,17 @@ namespace Descrio
     /// <summary>
     /// Represents a try-catch-finally block for exception handling.
     /// </summary>
-    public class TryCatchInstruction : IInstruction
+    public class TryCatchStatement : IStatement
     {
-        public IInstruction[] TryBlock { get; }
+        public IStatement[] TryBlock { get; }
         public IReadOnlyList<CatchClause> CatchClauses { get; }
-        public IInstruction[] FinallyBlock { get; }
+        public IStatement[] FinallyBlock { get; }
 
-        public TryCatchInstruction(IInstruction[] tryBlock, IReadOnlyList<CatchClause> catchClauses, IInstruction[] finallyBlock)
+        public TryCatchStatement(IStatement[] tryBlock, IReadOnlyList<CatchClause> catchClauses, IStatement[] finallyBlock)
         {
             TryBlock = tryBlock;
             CatchClauses = catchClauses;
             FinallyBlock = finallyBlock;
-        }
-
-        public ValueTask<VisitResult> AcceptAsync<VisitResult>(IAstVisitor<VisitResult> visitor)
-        {
-            return visitor.VisitAsync(this);
         }
     }
 }

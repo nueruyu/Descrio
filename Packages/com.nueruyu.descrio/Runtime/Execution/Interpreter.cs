@@ -10,54 +10,109 @@ using System.Threading.Tasks;
 
 namespace Descrio.Execution
 {
-    public class ExecutionVisitor : IAstVisitor<VisitResult>
+    public class Interpreter
     {
         private readonly ExecutionContext _context;
 
-        public ExecutionVisitor(ExecutionContext context)
+        public Interpreter(ExecutionContext context)
         {
             _context = context;
         }
 
-        public async ValueTask<VisitResult> VisitAsync(LetInstruction instruction)
+        public async ValueTask ExecuteAsync(Module module)
         {
-            var valueResult = await instruction.ValueExpression.AcceptAsync(this);
+            foreach (var statement in module.Statements)
+            {
+                var result = await ExecuteAsync(statement);
+                // A top-level return could potentially halt the script, but for now, we continue execution.
+                if (result.Flow == FlowState.Return)
+                {
+                    break; // Exit the module execution on a top-level return.
+                }
+            }
+        }
+
+        public ValueTask<VisitResult> ExecuteAsync(IStatement statement)
+        {
+            return statement switch
+            {
+                LetStatement s => ExecuteAsync(s),
+                VarStatement s => ExecuteAsync(s),
+                AssignStatement s => ExecuteAsync(s),
+                RunStatement s => ExecuteAsync(s),
+                FunctionStatement s => ExecuteAsync(s),
+                WhenStatement s => ExecuteAsync(s),
+                WhileStatement s => ExecuteAsync(s),
+                ForStatement s => ExecuteAsync(s),
+                ReturnStatement s => ExecuteAsync(s),
+                BreakStatement s => ExecuteAsync(s),
+                ContinueStatement s => ExecuteAsync(s),
+                MatchStatement s => ExecuteAsync(s),
+                TryCatchStatement s => ExecuteAsync(s),
+                ThrowStatement s => ExecuteAsync(s),
+                AssertStatement s => ExecuteAsync(s),
+                IExpression e => ExecuteAsync(e),
+                _ => throw new NotImplementedException($"Execution for {statement.GetType().Name} is not implemented.")
+            };
+        }
+
+        public ValueTask<VisitResult> ExecuteAsync(IExpression expression)
+        {
+            return expression switch
+            {
+                LiteralExpression e => ExecuteAsync(e),
+                VariableExpression e => ExecuteAsync(e),
+                BinaryExpression e => ExecuteAsync(e),
+                UnaryExpression e => ExecuteAsync(e),
+                InterpolatedStringExpression e => ExecuteAsync(e),
+                ListExpression e => ExecuteAsync(e),
+                DictionaryExpression e => ExecuteAsync(e),
+                MemberAccessExpression e => ExecuteAsync(e),
+                DispatchStatement e => ExecuteAsync(e),
+                RunStatement e => ExecuteAsync(e),
+                _ => throw new NotImplementedException($"Execution for {expression.GetType().Name} is not implemented.")
+            };
+        }
+
+        private async ValueTask<VisitResult> ExecuteAsync(LetStatement statement)
+        {
+            var valueResult = await ExecuteAsync(statement.ValueExpression);
             if (valueResult.Flow != FlowState.Normal)
                 return valueResult;
 
-            _context.Variables.Define(instruction.Name, valueResult.Value, isMutable: false);
+            _context.Variables.Define(statement.Name, valueResult.Value, isMutable: false);
             return VisitResult.Normal;
         }
 
-        public async ValueTask<VisitResult> VisitAsync(VarInstruction instruction)
+        private async ValueTask<VisitResult> ExecuteAsync(VarStatement statement)
         {
-            var valueResult = await instruction.ValueExpression.AcceptAsync(this);
+            var valueResult = await ExecuteAsync(statement.ValueExpression);
             if (valueResult.Flow != FlowState.Normal)
                 return valueResult;
 
-            _context.Variables.Define(instruction.Name, valueResult.Value, isMutable: true);
+            _context.Variables.Define(statement.Name, valueResult.Value, isMutable: true);
             return VisitResult.Normal;
         }
 
-        public async ValueTask<VisitResult> VisitAsync(AssignInstruction instruction)
+        private async ValueTask<VisitResult> ExecuteAsync(AssignStatement statement)
         {
-            var valueResult = await instruction.ValueExpression.AcceptAsync(this);
+            var valueResult = await ExecuteAsync(statement.ValueExpression);
             if (valueResult.Flow != FlowState.Normal)
                 return valueResult;
 
-            _context.Variables.Assign(instruction.Name, valueResult.Value);
+            _context.Variables.Assign(statement.Name, valueResult.Value);
             return VisitResult.Normal;
         }
 
-        public async ValueTask<VisitResult> VisitAsync(RunInstruction instruction)
+        private async ValueTask<VisitResult> ExecuteAsync(RunStatement statement)
         {
-            if (!_context.Callables.TryGet(instruction.Name, out var callable))
-                throw new InvalidOperationException($"Callable '{instruction.Name}' not found.");
+            if (!_context.Callables.TryGet(statement.Name, out var callable))
+                throw new InvalidOperationException($"Callable '{statement.Name}' not found.");
 
             var args = new Arguments();
-            foreach (var (key, valueExpr) in instruction.ArgExpressions)
+            foreach (var (key, valueExpr) in statement.ArgExpressions)
             {
-                var argResult = await valueExpr.AcceptAsync(this);
+                var argResult = await ExecuteAsync(valueExpr);
                 if (argResult.Flow != FlowState.Normal)
                     return argResult;
                 args[key] = argResult.Value;
@@ -67,13 +122,13 @@ namespace Descrio.Execution
             return VisitResult.NormalWithValue(resultValue);
         }
 
-        public ValueTask<VisitResult> VisitAsync(FunctionInstruction instruction)
+        private ValueTask<VisitResult> ExecuteAsync(FunctionStatement statement)
         {
             async ValueTask<object> CallAsync(Arguments args, ExecutionContext context)
             {
                 var localContext = context.CreateChildContext();
 
-                foreach (var param in instruction.Parameters)
+                foreach (var param in statement.Parameters)
                 {
                     if (args.TryGetValue(param.Name, out var value))
                     {
@@ -85,10 +140,10 @@ namespace Descrio.Execution
                     }
                 }
 
-                var visitor = new ExecutionVisitor(localContext);
-                foreach (var statement in instruction.Statements)
+                var interpreter = new Interpreter(localContext);
+                foreach (var stmt in statement.Statements)
                 {
-                    var result = await statement.AcceptAsync(visitor);
+                    var result = await interpreter.ExecuteAsync(stmt);
                     if (result.Flow == FlowState.Return)
                     {
                         return result.Value;
@@ -102,13 +157,13 @@ namespace Descrio.Execution
             }
 
             var callable = new DelegateCallable(CallAsync);
-            _context.Callables.Register(instruction.Name, callable);
+            _context.Callables.Register(statement.Name, callable);
             return new ValueTask<VisitResult>(VisitResult.Normal);
         }
 
-        public async ValueTask<VisitResult> VisitAsync(WhenInstruction instruction)
+        private async ValueTask<VisitResult> ExecuteAsync(WhenStatement statement)
         {
-            foreach (var caseBlock in instruction.Cases)
+            foreach (var caseBlock in statement.Cases)
             {
                 bool conditionMet = false;
                 if (caseBlock.Condition == null)
@@ -117,7 +172,7 @@ namespace Descrio.Execution
                 }
                 else
                 {
-                    var conditionResult = await caseBlock.Condition.AcceptAsync(this);
+                    var conditionResult = await ExecuteAsync(caseBlock.Condition);
                     if (conditionResult.Flow != FlowState.Normal)
                         return conditionResult;
                     conditionMet = IsTruthy(conditionResult.Value);
@@ -127,7 +182,7 @@ namespace Descrio.Execution
                 {
                     foreach (var inst in caseBlock.ThenBlock)
                     {
-                        var result = await inst.AcceptAsync(this);
+                        var result = await ExecuteAsync(inst);
                         // If a statement alters control flow (return, break), propagate it up.
                         if (result.Flow != FlowState.Normal)
                             return result;
@@ -138,14 +193,14 @@ namespace Descrio.Execution
             return VisitResult.Normal;
         }
 
-        public async ValueTask<VisitResult> VisitAsync(WhileInstruction instruction)
+        private async ValueTask<VisitResult> ExecuteAsync(WhileStatement statement)
         {
-            while (IsTruthy((await instruction.Condition.AcceptAsync(this)).Value))
+            while (IsTruthy((await ExecuteAsync(statement.Condition)).Value))
             {
                 _context.CancellationToken.ThrowIfCancellationRequested();
-                foreach (var statement in instruction.Statements)
+                foreach (var stmt in statement.Statements)
                 {
-                    var result = await statement.AcceptAsync(this);
+                    var result = await ExecuteAsync(stmt);
 
                     if (result.Flow == FlowState.Break)
                         return VisitResult.Normal;
@@ -158,9 +213,9 @@ namespace Descrio.Execution
             return VisitResult.Normal;
         }
 
-        public async ValueTask<VisitResult> VisitAsync(ForInstruction instruction)
+        private async ValueTask<VisitResult> ExecuteAsync(ForStatement statement)
         {
-            var collectionResult = await instruction.EnumerableExpression.AcceptAsync(this);
+            var collectionResult = await ExecuteAsync(statement.EnumerableExpression);
             if (collectionResult.Flow != FlowState.Normal)
                 return collectionResult;
 
@@ -173,13 +228,13 @@ namespace Descrio.Execution
             {
                 _context.CancellationToken.ThrowIfCancellationRequested();
                 var loopContext = _context.CreateChildContext();
-                loopContext.Variables.Define(instruction.VariableName, item, isMutable: false);
-                var loopVisitor = new ExecutionVisitor(loopContext);
+                loopContext.Variables.Define(statement.VariableName, item, isMutable: false);
+                var loopInterpreter = new Interpreter(loopContext);
 
                 var shouldContinue = false;
-                foreach (var statement in instruction.Statements)
+                foreach (var stmt in statement.Statements)
                 {
-                    var result = await statement.AcceptAsync(loopVisitor);
+                    var result = await loopInterpreter.ExecuteAsync(stmt);
                     if (result.Flow == FlowState.Break)
                         return VisitResult.Normal;
                     if (result.Flow == FlowState.Continue)
@@ -196,27 +251,27 @@ namespace Descrio.Execution
             return VisitResult.Normal;
         }
 
-        public async ValueTask<VisitResult> VisitAsync(ReturnInstruction instruction)
+        private async ValueTask<VisitResult> ExecuteAsync(ReturnStatement statement)
         {
-            var returnValue = instruction.ValueExpression != null
-                ? (await instruction.ValueExpression.AcceptAsync(this)).Value
+            var returnValue = statement.ValueExpression != null
+                ? (await ExecuteAsync(statement.ValueExpression)).Value
                 : null;
             return VisitResult.Return(returnValue);
         }
 
-        public ValueTask<VisitResult> VisitAsync(BreakInstruction instruction) => new(VisitResult.Break);
+        private ValueTask<VisitResult> ExecuteAsync(BreakStatement statement) => new(VisitResult.Break);
 
-        public ValueTask<VisitResult> VisitAsync(ContinueInstruction instruction) => new(VisitResult.Continue);
+        private ValueTask<VisitResult> ExecuteAsync(ContinueStatement statement) => new(VisitResult.Continue);
 
-        public async ValueTask<VisitResult> VisitAsync(DispatchInstruction instruction)
+        private async ValueTask<VisitResult> ExecuteAsync(DispatchStatement statement)
         {
-            if (!_context.Callables.TryGet(instruction.Name, out var callable))
-                throw new InvalidOperationException($"Callable '{instruction.Name}' not found.");
+            if (!_context.Callables.TryGet(statement.Name, out var callable))
+                throw new InvalidOperationException($"Callable '{statement.Name}' not found.");
 
             var args = new Arguments();
-            foreach (var (key, valueExpr) in instruction.ArgExpressions)
+            foreach (var (key, valueExpr) in statement.ArgExpressions)
             {
-                var argResult = await valueExpr.AcceptAsync(this);
+                var argResult = await ExecuteAsync(valueExpr);
                 if (argResult.Flow != FlowState.Normal)
                     return argResult;
                 args[key] = argResult.Value;
@@ -227,20 +282,20 @@ namespace Descrio.Execution
             return VisitResult.NormalWithValue(valueTask);
         }
 
-        public ValueTask<VisitResult> VisitAsync(LiteralExpression expression) => new(VisitResult.NormalWithValue(expression.Value));
+        private ValueTask<VisitResult> ExecuteAsync(LiteralExpression expression) => new(VisitResult.NormalWithValue(expression.Value));
 
-        public ValueTask<VisitResult> VisitAsync(VariableExpression expression)
+        private ValueTask<VisitResult> ExecuteAsync(VariableExpression expression)
         {
             var value = _context.Variables.Get(expression.VariableName);
             return new ValueTask<VisitResult>(VisitResult.NormalWithValue(value));
         }
 
-        public async ValueTask<VisitResult> VisitAsync(BinaryExpression expression)
+        private async ValueTask<VisitResult> ExecuteAsync(BinaryExpression expression)
         {
-            var leftResult = await expression.Left.AcceptAsync(this);
+            var leftResult = await ExecuteAsync(expression.Left);
             if (leftResult.Flow != FlowState.Normal)
                 return leftResult;
-            var rightResult = await expression.Right.AcceptAsync(this);
+            var rightResult = await ExecuteAsync(expression.Right);
             if (rightResult.Flow != FlowState.Normal)
                 return rightResult;
 
@@ -274,9 +329,9 @@ namespace Descrio.Execution
             };
         }
 
-        public async ValueTask<VisitResult> VisitAsync(UnaryExpression expression)
+        private async ValueTask<VisitResult> ExecuteAsync(UnaryExpression expression)
         {
-            var operandResult = await expression.Operand.AcceptAsync(this);
+            var operandResult = await ExecuteAsync(expression.Operand);
             if (operandResult.Flow != FlowState.Normal)
                 return operandResult;
             var operand = operandResult.Value;
@@ -289,12 +344,12 @@ namespace Descrio.Execution
             };
         }
 
-        public async ValueTask<VisitResult> VisitAsync(InterpolatedStringExpression expression)
+        private async ValueTask<VisitResult> ExecuteAsync(InterpolatedStringExpression expression)
         {
             var sb = new StringBuilder();
             foreach (var part in expression.Parts)
             {
-                var partResult = await part.AcceptAsync(this);
+                var partResult = await ExecuteAsync(part);
                 if (partResult.Flow != FlowState.Normal)
                     return partResult;
                 sb.Append(partResult.Value?.ToString());
@@ -302,12 +357,12 @@ namespace Descrio.Execution
             return VisitResult.NormalWithValue(sb.ToString());
         }
 
-        public async ValueTask<VisitResult> VisitAsync(ListExpression expression)
+        private async ValueTask<VisitResult> ExecuteAsync(ListExpression expression)
         {
             var results = new List<object>();
             foreach (var elementExpr in expression.Elements)
             {
-                var elementResult = await elementExpr.AcceptAsync(this);
+                var elementResult = await ExecuteAsync(elementExpr);
                 if (elementResult.Flow != FlowState.Normal)
                 {
                     return elementResult;
@@ -317,12 +372,12 @@ namespace Descrio.Execution
             return VisitResult.NormalWithValue(results);
         }
 
-        public async ValueTask<VisitResult> VisitAsync(DictionaryExpression expression)
+        private async ValueTask<VisitResult> ExecuteAsync(DictionaryExpression expression)
         {
             var results = new Dictionary<string, object>(StringComparer.Ordinal);
             foreach (var (key, valueExpr) in expression.Entries)
             {
-                var valueResult = await valueExpr.AcceptAsync(this);
+                var valueResult = await ExecuteAsync(valueExpr);
                 if (valueResult.Flow != FlowState.Normal)
                 {
                     return valueResult;
@@ -332,9 +387,9 @@ namespace Descrio.Execution
             return VisitResult.NormalWithValue(results);
         }
 
-        public async ValueTask<VisitResult> VisitAsync(MemberAccessExpression expression)
+        private async ValueTask<VisitResult> ExecuteAsync(MemberAccessExpression expression)
         {
-            var objResult = await expression.ObjectExpression.AcceptAsync(this);
+            var objResult = await ExecuteAsync(expression.ObjectExpression);
             if (objResult.Flow != FlowState.Normal)
                 return objResult;
 
@@ -364,21 +419,21 @@ namespace Descrio.Execution
             return VisitResult.NormalWithValue(null);
         }
 
-        public async ValueTask<VisitResult> VisitAsync(MatchInstruction instruction)
+        private async ValueTask<VisitResult> ExecuteAsync(MatchStatement statement)
         {
-            var matchValueResult = await instruction.ValueExpression.AcceptAsync(this);
+            var matchValueResult = await ExecuteAsync(statement.ValueExpression);
             if (matchValueResult.Flow != FlowState.Normal)
                 return matchValueResult;
 
             var matchValue = matchValueResult.Value;
 
-            foreach (var caseBlock in instruction.Cases)
+            foreach (var caseBlock in statement.Cases)
             {
                 if (Equals(caseBlock.CaseValue, matchValue))
                 {
                     foreach (var stmt in caseBlock.ThenBlock)
                     {
-                        var result = await stmt.AcceptAsync(this);
+                        var result = await ExecuteAsync(stmt);
                         if (result.Flow != FlowState.Normal)
                             return result;
                     }
@@ -386,11 +441,11 @@ namespace Descrio.Execution
                 }
             }
 
-            if (instruction.DefaultBlock != null)
+            if (statement.DefaultBlock != null)
             {
-                foreach (var stmt in instruction.DefaultBlock)
+                foreach (var stmt in statement.DefaultBlock)
                 {
-                    var result = await stmt.AcceptAsync(this);
+                    var result = await ExecuteAsync(stmt);
                     if (result.Flow != FlowState.Normal)
                         return result;
                 }
@@ -399,14 +454,14 @@ namespace Descrio.Execution
             return VisitResult.Normal;
         }
 
-        public async ValueTask<VisitResult> VisitAsync(TryCatchInstruction instruction)
+        private async ValueTask<VisitResult> ExecuteAsync(TryCatchStatement statement)
         {
             VisitResult finalResult = VisitResult.Normal;
             try
             {
-                foreach (var stmt in instruction.TryBlock)
+                foreach (var stmt in statement.TryBlock)
                 {
-                    var result = await stmt.AcceptAsync(this);
+                    var result = await ExecuteAsync(stmt);
                     if (result.Flow != FlowState.Normal)
                     {
                         finalResult = result;
@@ -417,7 +472,7 @@ namespace Descrio.Execution
             catch (Exception ex)
             {
                 CatchClause matchedClause = null;
-                foreach (var clause in instruction.CatchClauses)
+                foreach (var clause in statement.CatchClauses)
                 {
                     if (clause.ErrorName == null) // Default catch-all
                     {
@@ -440,10 +495,10 @@ namespace Descrio.Execution
                         catchContext.Variables.Define(matchedClause.VariableName, ex, isMutable: false);
                     }
 
-                    var catchVisitor = new ExecutionVisitor(catchContext);
+                    var catchInterpreter = new Interpreter(catchContext);
                     foreach (var stmt in matchedClause.ThenBlock)
                     {
-                        var result = await stmt.AcceptAsync(catchVisitor);
+                        var result = await catchInterpreter.ExecuteAsync(stmt);
                         if (result.Flow != FlowState.Normal)
                         {
                             finalResult = result;
@@ -458,11 +513,11 @@ namespace Descrio.Execution
             }
             finally
             {
-                if (instruction.FinallyBlock != null)
+                if (statement.FinallyBlock != null)
                 {
-                    foreach (var stmt in instruction.FinallyBlock)
+                    foreach (var stmt in statement.FinallyBlock)
                     {
-                        var result = await stmt.AcceptAsync(this);
+                        var result = await ExecuteAsync(stmt);
                         if (result.Flow != FlowState.Normal && finalResult.Flow == FlowState.Normal)
                         {
                             finalResult = result;
@@ -473,17 +528,17 @@ namespace Descrio.Execution
             return finalResult;
         }
 
-        public async ValueTask<VisitResult> VisitAsync(ThrowInstruction instruction)
+        private async ValueTask<VisitResult> ExecuteAsync(ThrowStatement statement)
         {
-            if (!_context.Classes.TryGet(instruction.Name, out var exceptionType) || !typeof(Exception).IsAssignableFrom(exceptionType))
+            if (!_context.Classes.TryGet(statement.Name, out var exceptionType) || !typeof(Exception).IsAssignableFrom(exceptionType))
             {
-                throw new InvalidOperationException($"'{instruction.Name}' is not a valid and registered exception class.");
+                throw new InvalidOperationException($"'{statement.Name}' is not a valid and registered exception class.");
             }
 
             var args = new Dictionary<string, object>();
-            foreach (var (key, valueExpr) in instruction.ArgExpressions)
+            foreach (var (key, valueExpr) in statement.ArgExpressions)
             {
-                var argResult = await valueExpr.AcceptAsync(this);
+                var argResult = await ExecuteAsync(valueExpr);
                 if (argResult.Flow != FlowState.Normal)
                     return argResult;
                 args[key] = argResult.Value;
@@ -512,15 +567,15 @@ namespace Descrio.Execution
             throw instance;
         }
 
-        public async ValueTask<VisitResult> VisitAsync(AssertInstruction instruction)
+        private async ValueTask<VisitResult> ExecuteAsync(AssertStatement statement)
         {
-            var conditionResult = await instruction.Condition.AcceptAsync(this);
+            var conditionResult = await ExecuteAsync(statement.Condition);
             if (conditionResult.Flow != FlowState.Normal)
                 return conditionResult;
 
             if (!IsTruthy(conditionResult.Value))
             {
-                throw new InvalidOperationException(instruction.Message ?? "Assertion failed.");
+                throw new InvalidOperationException(statement.Message ?? "Assertion failed.");
             }
 
             return VisitResult.Normal;

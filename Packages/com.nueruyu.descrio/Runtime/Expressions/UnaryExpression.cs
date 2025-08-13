@@ -16,10 +16,5 @@ namespace Descrio
             OperatorType = operatorType;
             Operand = operand;
         }
-
-        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
-        {
-            return visitor.VisitAsync(this);
-        }
     }
 }

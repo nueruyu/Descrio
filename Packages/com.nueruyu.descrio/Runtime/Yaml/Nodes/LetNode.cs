@@ -2,7 +2,7 @@ using YamlDotNet.Serialization;
 
 namespace Descrio.Yaml.Nodes
 {
-    internal class LetNode : IInstructionNode
+    internal class LetNode : IStatementNode
     {
         [YamlMember(Alias = "name")]
         public string Name { get; set; }
@@ -13,6 +13,6 @@ namespace Descrio.Yaml.Nodes
         // [YamlMember(Alias = "type")]
         // public string Type { get; set; }
 
-        public IInstruction ToInstruction() => new LetInstruction(Name, Value.ToExpression());
+        public IStatement ToStatement() => new LetStatement(Name, Value.ToExpression());
     }
 }

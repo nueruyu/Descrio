@@ -33,7 +33,8 @@ namespace Descrio.EditorTests
             var parser = new ExpressionParser(source);
             var expression = parser.Parse();
 
-            var visitResult = await expression.AcceptAsync(new ExecutionVisitor(context));
+            var interpreter = new Interpreter(context);
+            var visitResult = await interpreter.ExecuteAsync(expression);
             // Expressions should not alter control flow, so we assert this rule.
             Assert.AreEqual(FlowState.Normal, visitResult.Flow, "Expression evaluation should not alter control flow.");
             return visitResult.Value;

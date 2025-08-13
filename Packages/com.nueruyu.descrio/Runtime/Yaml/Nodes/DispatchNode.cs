@@ -4,7 +4,7 @@ using YamlDotNet.Serialization;
 
 namespace Descrio.Yaml.Nodes
 {
-    internal class DispatchNode : IExpressionNode
+    internal class DispatchNode : IStatementNode, IExpressionNode
     {
         [YamlMember(Alias = "name")]
         public string Name { get; set; }
@@ -12,8 +12,12 @@ namespace Descrio.Yaml.Nodes
         [YamlMember(Alias = "args")]
         public Dictionary<string, IExpressionNode> Args { get; set; }
 
-        public IExpression ToExpression() => new DispatchInstruction(
+        DispatchStatement ToDispatchStatement() => new DispatchStatement(
             Name,
             Args?.ToDictionary(x => x.Key, x => x.Value.ToExpression()) ?? new());
+
+        public IStatement ToStatement() => ToDispatchStatement();
+
+        public IExpression ToExpression() => ToDispatchStatement();
     }
 }

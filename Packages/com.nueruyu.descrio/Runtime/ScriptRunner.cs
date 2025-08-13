@@ -98,8 +98,8 @@ namespace Descrio
                 await LoadModuleAndDependenciesAsync(absoluteImportPath, moduleContext, loadedModules);
             }
 
-            var visitor = new ExecutionVisitor(moduleContext);
-            await module.AcceptAsync(visitor);
+            var interpreter = new Interpreter(moduleContext);
+            await interpreter.ExecuteAsync(module);
 
             return module;
         }

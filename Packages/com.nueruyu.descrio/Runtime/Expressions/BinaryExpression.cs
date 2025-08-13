@@ -26,10 +26,5 @@ namespace Descrio
         public IExpression Right => _right;
 
         public OperatorType OperatorType => _operatorType;
-
-        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
-        {
-            return visitor.VisitAsync(this);
-        }
     }
 }

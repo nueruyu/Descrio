@@ -12,10 +12,5 @@ namespace Descrio
         {
             Entries = entries ?? new Dictionary<string, IExpression>();
         }
-
-        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
-        {
-            return visitor.VisitAsync(this);
-        }
     }
 }
