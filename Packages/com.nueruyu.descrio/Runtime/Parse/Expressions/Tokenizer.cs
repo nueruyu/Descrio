@@ -22,7 +22,6 @@ namespace Descrio.Parse.Expressions
             {"true", TRUE},
             {"false", FALSE},
             {"null", NULL}
-            // Future keywords like "and", "or" can be added here.
         };
 
         public Tokenizer(string source)
@@ -58,6 +57,10 @@ namespace Descrio.Parse.Expressions
 
                 case ')':
                     AddToken(RIGHT_PAREN);
+                    break;
+
+                case '.':
+                    AddToken(DOT);
                     break;
 
                 case '+':

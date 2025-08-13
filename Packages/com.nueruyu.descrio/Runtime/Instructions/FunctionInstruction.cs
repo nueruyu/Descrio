@@ -18,7 +18,7 @@ namespace Descrio
             Statements = statements ?? throw new ArgumentNullException(nameof(statements));
         }
 
-        public ValueTask AcceptAsync(IAstVisitor visitor)
+        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
         {
             return visitor.VisitAsync(this);
         }

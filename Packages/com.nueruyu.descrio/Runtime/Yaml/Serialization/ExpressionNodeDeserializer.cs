@@ -5,6 +5,8 @@ using YamlDotNet.Core.Events;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using Descrio.Yaml.Nodes;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Descrio.Yaml.Serialization
 {
@@ -23,18 +25,33 @@ namespace Descrio.Yaml.Serialization
                 return false;
             }
 
-            parser.Accept<NodeEvent>(out var nextNode);
-
             var instance = nestedObjectDeserializer(parser, typeof(object));
-
-            if (instance is IExpressionNode expressionNode)
-            {
-                value = expressionNode;
-                return true;
-            }
-
-            value = new LiteralNode(instance);
+            value = ConvertItem(instance);
             return true;
+        }
+
+        private IExpressionNode ConvertItem(object item)
+        {
+            switch (item)
+            {
+                case IExpressionNode expressionNode:
+                    return expressionNode;
+
+                case List<object> list:
+                    return new ListExpressionNode(list.Select(ConvertItem).ToList());
+
+                case Dictionary<object, object> dict:
+                    return new DictionaryExpressionNode(dict.ToDictionary(
+                        kvp => kvp.Key.ToString(),
+                        kvp => ConvertItem(kvp.Value)
+                    ));
+
+                case string s:
+                    return new LiteralNode(ValueConverter.Convert(s));
+
+                default:
+                    return new LiteralNode(item);
+            }
         }
     }
 }

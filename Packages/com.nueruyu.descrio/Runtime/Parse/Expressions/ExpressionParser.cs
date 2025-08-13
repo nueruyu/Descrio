@@ -36,6 +36,7 @@ namespace Descrio.Parse.Expressions
             TERM,       // + -
             FACTOR,     // * /
             UNARY,      // ! -
+            CALL        // .
         }
 
         public ExpressionParser(string text)
@@ -64,16 +65,22 @@ namespace Descrio.Parse.Expressions
             });
 
             // Register Infix parselets, which handle tokens that appear between two operands.
-            Register(PLUS, OperatorType.Add, Precedence.TERM);
-            Register(MINUS, OperatorType.Subtract, Precedence.TERM);
-            Register(STAR, OperatorType.Multiply, Precedence.FACTOR);
-            Register(SLASH, OperatorType.Divide, Precedence.FACTOR);
-            Register(EQUAL_EQUAL, OperatorType.Equal, Precedence.EQUALITY);
-            Register(BANG_EQUAL, OperatorType.NotEqual, Precedence.EQUALITY);
-            Register(GREATER, OperatorType.GreaterThan, Precedence.COMPARISON);
-            Register(GREATER_EQUAL, OperatorType.GreaterThanOrEqual, Precedence.COMPARISON);
-            Register(LESS, OperatorType.LessThan, Precedence.COMPARISON);
-            Register(LESS_EQUAL, OperatorType.LessThanOrEqual, Precedence.COMPARISON);
+            RegisterInfix(PLUS, OperatorType.Add, Precedence.TERM);
+            RegisterInfix(MINUS, OperatorType.Subtract, Precedence.TERM);
+            RegisterInfix(STAR, OperatorType.Multiply, Precedence.FACTOR);
+            RegisterInfix(SLASH, OperatorType.Divide, Precedence.FACTOR);
+            RegisterInfix(EQUAL_EQUAL, OperatorType.Equal, Precedence.EQUALITY);
+            RegisterInfix(BANG_EQUAL, OperatorType.NotEqual, Precedence.EQUALITY);
+            RegisterInfix(GREATER, OperatorType.GreaterThan, Precedence.COMPARISON);
+            RegisterInfix(GREATER_EQUAL, OperatorType.GreaterThanOrEqual, Precedence.COMPARISON);
+            RegisterInfix(LESS, OperatorType.LessThan, Precedence.COMPARISON);
+            RegisterInfix(LESS_EQUAL, OperatorType.LessThanOrEqual, Precedence.COMPARISON);
+
+            RegisterInfix(DOT, Precedence.CALL, (left) =>
+            {
+                var member = Consume(IDENTIFIER, "Expect property name after '.'.");
+                return new MemberAccessExpression(left, member.Lexeme);
+            });
         }
 
         /// <summary>
@@ -136,12 +143,15 @@ namespace Descrio.Parse.Expressions
 
         private void Register(TokenType type, PrefixParselet parselet) => _prefixParselets[type] = parselet;
 
-        private void Register(TokenType type, OperatorType opType, Precedence precedence)
+        private void RegisterInfix(TokenType type, Precedence precedence, InfixParselet parselet)
         {
-            // The recursive call to ParsePrecedence with the operator's own precedence
-            // correctly handles left-associativity for operators of the same precedence level.
-            _infixParselets[type] = (left) => new BinaryExpression(left, ParsePrecedence(precedence), opType);
+            _infixParselets[type] = parselet;
             _precedences[type] = precedence;
+        }
+
+        private void RegisterInfix(TokenType type, OperatorType opType, Precedence precedence)
+        {
+            RegisterInfix(type, precedence, (left) => new BinaryExpression(left, ParsePrecedence(precedence), opType));
         }
 
         private Precedence GetPrecedence(TokenType type)
@@ -214,7 +224,7 @@ namespace Descrio.Parse.Expressions
 
         private Token Advance() => !IsAtEnd() ? _tokens[_current++] : _tokens.Last();
 
-        private bool IsAtEnd() => _current < _tokens.Count && Current().Type == EOF;
+        private bool IsAtEnd() => _current >= _tokens.Count || Current().Type == EOF;
 
         private Token Consume(TokenType type, string message)
         {

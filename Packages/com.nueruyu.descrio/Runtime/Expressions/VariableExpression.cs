@@ -11,7 +11,7 @@ namespace Descrio
 
         public string VariableName => _variableName;
 
-        public ValueTask<object> AcceptAsync(IAstVisitor visitor)
+        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
         {
             return visitor.VisitAsync(this);
         }
