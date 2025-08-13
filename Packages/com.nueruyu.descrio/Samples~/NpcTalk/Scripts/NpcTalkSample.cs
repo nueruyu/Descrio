@@ -71,16 +71,13 @@ namespace Descrio.Samples.NpcTalk
         /// </summary>
         private async void StartDialogueAsync(string scriptText, CancellationToken cancellationToken)
         {
-            var callables = new Dictionary<string, ICallable>
-            {
-                { "ShowMessage", new DelegateCallable(ShowMessage) },
-                { "ShowChoices", new DelegateCallable(ShowChoices) },
-            };
-
             var modules = new Dictionary<string, string> { { "/main.yaml", scriptText } };
             var moduleProvider = new InMemoryModuleProvider(modules);
             var parser = new YamlScriptParser();
-            var runner = new ScriptRunner(parser, moduleProvider, callables);
+
+            // Register callables from this class instance using the new attribute-based system.
+            var runner = new ScriptRunner(parser, moduleProvider)
+                .AddCallables(this);
 
             try
             {
@@ -98,11 +95,12 @@ namespace Descrio.Samples.NpcTalk
             }
         }
 
-        // --- Built-in Callable Implementations ---
+        // --- Callable Implementations ---
 
-        private async ValueTask ShowMessage(Arguments args, CancellationToken ct)
+        [Callable]
+        public async ValueTask ShowMessage(string text)
         {
-            _messageLabel.text = args.TryGetValue("text", out var text) ? text.ToString() : "";
+            _messageLabel.text = text;
             _choicesContainer.Clear();
 
             var tcs = new TaskCompletionSource<object>();
@@ -116,24 +114,22 @@ namespace Descrio.Samples.NpcTalk
             _choicesContainer.Clear();
         }
 
-        private async ValueTask<object> ShowChoices(Arguments args, CancellationToken ct)
+        [Callable]
+        public async ValueTask<object> ShowChoices(IEnumerable<object> choices)
         {
             _messageLabel.text = "Please make a choice.";
             _choicesContainer.Clear();
 
             var tcs = new TaskCompletionSource<object>();
 
-            if (args.TryGetValue("choices", out var choicesObj) && choicesObj is IEnumerable choices)
+            var i = 0;
+            foreach (var choiceObj in choices)
             {
-                var i = 0;
-                foreach (var choiceObj in choices)
-                {
-                    var choice = choiceObj?.ToString() ?? "";
-                    var index = i; // Capture index for the lambda
-                    var button = new Button(() => tcs?.TrySetResult(index)) { text = choice };
-                    _choicesContainer.Add(button);
-                    i++;
-                }
+                var choice = choiceObj?.ToString() ?? "";
+                var index = i; // Capture index for the lambda
+                var button = new Button(() => tcs?.TrySetResult(index)) { text = choice };
+                _choicesContainer.Add(button);
+                i++;
             }
 
             // Wait for a choice and return its index.

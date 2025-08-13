@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <UnityProjectRoot>..\..\..</UnityProjectRoot>
+    <UnityLibraryDir>$(UnityProjectRoot)\Library\ScriptAssemblies\</UnityLibraryDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Descrio">
+      <HintPath>$(UnityLibraryDir)Descrio.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CopyOutputToDestination" AfterTargets="Build">
+    <Message Text="--- Copying DLL to destination folder ---" Importance="high" />
+
+    <Copy
+      SourceFiles="$(TargetPath)"
+      DestinationFolder="$(UnityProjectRoot)\Packages\com.nueruyu.descrio"
+      OverwriteReadOnlyFiles="true"
+      SkipUnchangedFiles="false"
+    />
+  </Target>
+</Project>
