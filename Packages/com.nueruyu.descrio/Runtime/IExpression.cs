@@ -5,6 +5,6 @@ namespace Descrio
 {
     public interface IExpression
     {
-        ValueTask<object> AcceptAsync(IAstVisitor visitor);
+        ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor);
     }
 }

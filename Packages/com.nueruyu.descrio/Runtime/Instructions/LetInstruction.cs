@@ -16,7 +16,7 @@ namespace Descrio
             ValueExpression = valueExpression ?? throw new ArgumentNullException(nameof(valueExpression));
         }
 
-        public ValueTask AcceptAsync(IAstVisitor visitor)
+        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
         {
             return visitor.VisitAsync(this);
         }

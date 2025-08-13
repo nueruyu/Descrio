@@ -3,6 +3,7 @@ using Descrio.Execution;
 using Descrio.Parse.Expressions;
 using System.Threading.Tasks;
 using System;
+using System.Globalization;
 
 namespace Descrio.EditorTests
 {
@@ -16,13 +17,14 @@ namespace Descrio.EditorTests
         {
             // Prepare a context with some variables for general use in tests.
             var varRegistry = new VariableRegistry();
-            varRegistry.Set("x", 10L);
-            varRegistry.Set("y", 20L);
-            varRegistry.Set("t", true);
-            varRegistry.Set("f", false);
-            varRegistry.Set("s", "Descrio");
+            // Per user request, assuming Define defaults to isMutable: true
+            varRegistry.Define("x", 10L);
+            varRegistry.Define("y", 20L);
+            varRegistry.Define("t", true);
+            varRegistry.Define("f", false);
+            varRegistry.Define("s", "Descrio");
 
-            _testContext = new ExecutionContext(new ModulePath("/"), new CallableRegistry(), varRegistry);
+            _testContext = new ExecutionContext(new ModulePath("/"), new CallableRegistry(), varRegistry, new ClassRegistry());
         }
 
         // Helper to parse and evaluate an expression with a given context
@@ -30,7 +32,11 @@ namespace Descrio.EditorTests
         {
             var parser = new ExpressionParser(source);
             var expression = parser.Parse();
-            return await expression.AcceptAsync(new ExecutionVisitor(context));
+
+            var visitResult = await expression.AcceptAsync(new ExecutionVisitor(context));
+            // Expressions should not alter control flow, so we assert this rule.
+            Assert.AreEqual(FlowState.Normal, visitResult.Flow, "Expression evaluation should not alter control flow.");
+            return visitResult.Value;
         }
 
         // Helper to evaluate with the default test context
@@ -59,9 +65,10 @@ namespace Descrio.EditorTests
         }
 
         [Test]
-        public async Task Parse_UndefinedVariable_ShouldEvaluateToNull()
+        public void Parse_UndefinedVariable_ShouldThrowException()
         {
-            Assert.AreEqual(null, await Evaluate("undefined_variable"));
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(() => Evaluate("undefined_variable"));
+            StringAssert.Contains("Variable 'undefined_variable' is not defined", ex.Message);
         }
 
         [Test]
@@ -115,7 +122,8 @@ namespace Descrio.EditorTests
             Assert.AreEqual(expected, await Evaluate(source));
         }
 
-        [Test, TestCase("-10", -10L)]
+        [Test]
+        [TestCase("-10", -10L)]
         [TestCase("-x", -10L)]
         [TestCase("5 * -2", -10L)]
         [TestCase("-5 - -2", -3L)]
@@ -160,8 +168,8 @@ namespace Descrio.EditorTests
         public async Task Parse_NestedStringInterpolation_ShouldEvaluateCorrectly()
         {
             var varRegistry = new VariableRegistry();
-            varRegistry.Set("inner", "World");
-            var context = new ExecutionContext(new ModulePath("/"), new CallableRegistry(), varRegistry);
+            varRegistry.Define("inner", "World");
+            var context = new ExecutionContext(new ModulePath("/"), new CallableRegistry(), varRegistry, new());
 
             var source = "'Hello, ${ \"${inner}!\" }'";
             Assert.AreEqual("Hello, World!", await Evaluate(source, context));

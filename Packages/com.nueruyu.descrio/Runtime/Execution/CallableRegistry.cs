@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Descrio
+namespace Descrio.Execution
 {
     public class CallableRegistry
     {

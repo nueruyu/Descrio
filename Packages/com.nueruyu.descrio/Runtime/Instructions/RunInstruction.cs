@@ -17,12 +17,7 @@ namespace Descrio
             ArgExpressions = argExpressions ?? throw new ArgumentNullException(nameof(argExpressions));
         }
 
-        async ValueTask IInstruction.AcceptAsync(IAstVisitor visitor)
-        {
-            await visitor.VisitAsync(this);
-        }
-
-        ValueTask<object> IExpression.AcceptAsync(IAstVisitor visitor)
+        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
         {
             return visitor.VisitAsync(this);
         }

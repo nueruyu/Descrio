@@ -5,6 +5,6 @@ namespace Descrio
 {
     public interface IInstruction
     {
-        ValueTask AcceptAsync(IAstVisitor visitor);
+        ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor);
     }
 }

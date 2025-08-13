@@ -5,6 +5,8 @@ namespace Descrio.Parse.Expressions
         // Single-character tokens.
         LEFT_PAREN, RIGHT_PAREN,
 
+        DOT, // Member access
+
         PLUS, MINUS, STAR, SLASH,
         BANG, EQUAL, GREATER, LESS,
 
@@ -26,7 +28,6 @@ namespace Descrio.Parse.Expressions
 
         FALSE,
         NULL,
-        // Potentially `and`, `or` in the future.
 
         EOF
     }

@@ -13,7 +13,7 @@ namespace Descrio
             Cases = cases ?? throw new ArgumentNullException(nameof(cases));
         }
 
-        public ValueTask AcceptAsync(IAstVisitor visitor)
+        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
         {
             return visitor.VisitAsync(this);
         }

@@ -27,7 +27,7 @@ namespace Descrio
 
         public OperatorType OperatorType => _operatorType;
 
-        public ValueTask<object> AcceptAsync(IAstVisitor visitor)
+        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
         {
             return visitor.VisitAsync(this);
         }
