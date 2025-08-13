@@ -89,7 +89,7 @@ statements:
         {
             var mainScript = @"
 imports:
-  - ./utils/common.yaml
+  - from: ./utils/common.yaml
 statements:
   - !run
     name: log
@@ -273,7 +273,8 @@ statements:
         public async Task ExecuteAsync_NestedModuleImport_ShouldExecuteInCorrectOrder()
         {
             var mainScript = @"
-imports: ['./moduleA.yaml']
+imports:
+  - from: ./moduleA.yaml
 statements:
   - !run
     name: log
@@ -282,7 +283,8 @@ statements:
     name: func_a
 ";
             var moduleA = @"
-imports: ['./moduleB.yaml']
+imports:
+  - from: ./moduleB.yaml
 statements:
   - !function
     name: func_a
@@ -337,14 +339,16 @@ statements:
         public async Task ExecuteAsync_CircularImport_ShouldNotCauseInfiniteLoop()
         {
             var moduleA = @"
-imports: ['./moduleB.yaml']
+imports:
+  - from: ./moduleB.yaml
 statements:
   - !run
     name: log
     args: { text: 'module_a' }
 ";
             var moduleB = @"
-imports: ['./moduleA.yaml']
+imports:
+  - from: ./moduleA.yaml
 statements:
   - !run
     name: log
