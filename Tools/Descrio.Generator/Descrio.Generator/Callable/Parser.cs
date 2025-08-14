@@ -1,5 +1,6 @@
 using Descrio.Generator.Callable.Models;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -30,11 +31,20 @@ namespace Descrio.Generator.Callable
                 if (methodSymbol == null)
                     continue;
 
-                var attribute = methodSymbol.GetAttributes().FirstOrDefault(ad => ad.AttributeClass.Equals(attributeSymbol, SymbolEqualityComparer.Default));
-                if (attribute == null)
+                var attributeData = methodSymbol.GetAttributes()
+                    .FirstOrDefault(ad => ad.AttributeClass.Equals(attributeSymbol, SymbolEqualityComparer.Default));
+                if (attributeData == null)
                     continue;
 
                 var classSymbol = methodSymbol.ContainingType;
+
+                if (methodSymbol.DeclaredAccessibility != Accessibility.Public &&
+                    methodSymbol.DeclaredAccessibility != Accessibility.Internal)
+                {
+                    // Skip private/protected methods as they cannot be accessed from the generated internal wrapper class.
+                    continue;
+                }
+
                 if (classSymbol.DeclaredAccessibility != Accessibility.Public &&
                     classSymbol.DeclaredAccessibility != Accessibility.Internal)
                 {
@@ -45,36 +55,109 @@ namespace Descrio.Generator.Callable
                 {
                     classInfo = new CallableClassInfo
                     {
-                        TypeSymbol = classSymbol,
                         ClassName = classSymbol.Name,
                         FullClassName = classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                        Namespace = classSymbol.ContainingNamespace.IsGlobalNamespace ? null : classSymbol.ContainingNamespace.ToDisplayString()
+                        Accessibility = classSymbol.DeclaredAccessibility,
+                        Namespace = classSymbol.ContainingNamespace.IsGlobalNamespace ?
+                            null :
+                            classSymbol.ContainingNamespace.ToDisplayString(),
+                        Methods = new List<CallableMethodInfo>()
                     };
                     classInfos[classSymbol] = classInfo;
                 }
 
+                var (isAwaitable, returnsValue) = AnalyzeReturnType(compilation, methodSymbol.ReturnType);
+
                 var methodInfo = new CallableMethodInfo
                 {
                     MethodName = methodSymbol.Name,
-                    CallableName = attribute.ConstructorArguments.FirstOrDefault().Value?.ToString() ?? methodSymbol.Name,
+                    CallableName = GetCallableName(methodSymbol, attributeData),
                     ReturnType = methodSymbol.ReturnType,
-                };
-
-                foreach (var paramSymbol in methodSymbol.Parameters)
-                {
-                    methodInfo.Parameters.Add(new ParameterInfo
+                    IsAwaitable = isAwaitable,
+                    ReturnsValue = returnsValue,
+                    Parameters = methodSymbol.Parameters.Select(p => new ParameterInfo
                     {
-                        Name = paramSymbol.Name,
-                        Type = paramSymbol.Type,
-                        HasDefaultValue = paramSymbol.HasExplicitDefaultValue,
-                        DefaultValue = paramSymbol.HasExplicitDefaultValue ? paramSymbol.ExplicitDefaultValue : null
-                    });
-                }
-
+                        Name = p.Name,
+                        Type = p.Type,
+                        HasDefaultValue = p.HasExplicitDefaultValue,
+                        DefaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue : null
+                    }).ToList()
+                };
                 classInfo.Methods.Add(methodInfo);
             }
 
             return classInfos.Values.ToList();
+        }
+
+        private static (bool IsAwaitable, bool ReturnsValue) AnalyzeReturnType(Compilation compilation, ITypeSymbol type)
+        {
+            if (type == null)
+                return (false, false);
+
+            var getAwaiterMethod = type.GetMembers("GetAwaiter")
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault(m =>
+                    !m.IsStatic &&
+                    m.Parameters.Length == 0 &&
+                    m.DeclaredAccessibility == Accessibility.Public);
+
+            if (getAwaiterMethod == null)
+            {
+                return (false, type.SpecialType != SpecialType.System_Void);
+            }
+
+            var awaiterType = getAwaiterMethod.ReturnType;
+            if (awaiterType == null)
+                return (false, type.SpecialType != SpecialType.System_Void);
+
+            var isCompletedProperty = awaiterType.GetMembers("IsCompleted")
+                .OfType<IPropertySymbol>()
+                .FirstOrDefault(p => p.Type.SpecialType == SpecialType.System_Boolean);
+
+            var notifyCompletion = compilation.GetTypeByMetadataName("System.Runtime.CompilerServices.INotifyCompletion");
+            var getResultMethod = awaiterType.GetMembers("GetResult")
+                .OfType<IMethodSymbol>()
+                .FirstOrDefault();
+
+            if (isCompletedProperty == null ||
+                notifyCompletion == null ||
+                !awaiterType.AllInterfaces.Contains(notifyCompletion, SymbolEqualityComparer.Default) ||
+                getResultMethod == null)
+            {
+                return (false, type.SpecialType != SpecialType.System_Void);
+            }
+
+            bool returnsValue = getResultMethod.ReturnType.SpecialType != SpecialType.System_Void;
+            return (true, returnsValue);
+        }
+
+        private static string GetCallableName(IMethodSymbol methodSymbol, AttributeData attributeData)
+        {
+            // [Callable] -> methodSymbol.Name
+            // [Callable(null)] -> methodSymbol.Name
+            // [Callable("")] -> methodSymbol.Name
+            // [Callable("MyName")] -> "MyName"
+            // [Callable(Name = "MyName")] -> "MyName"
+
+            // First, check for named arguments like [Callable(Name = "MyName")]
+            var namedArgument = attributeData.NamedArguments.FirstOrDefault(arg => arg.Key == "Name");
+            if (namedArgument.Key != null &&
+                namedArgument.Value.Value is string namedArgValue &&
+                !string.IsNullOrEmpty(namedArgValue))
+            {
+                return namedArgValue;
+            }
+
+            // If not found, check for constructor arguments like [Callable("MyName")]
+            var constructorArgument = attributeData.ConstructorArguments.FirstOrDefault();
+            if (constructorArgument.Value is string ctorArgValue &&
+                !string.IsNullOrEmpty(ctorArgValue))
+            {
+                return ctorArgValue;
+            }
+
+            // If no name is provided, use the method name itself.
+            return methodSymbol.Name;
         }
     }
 }

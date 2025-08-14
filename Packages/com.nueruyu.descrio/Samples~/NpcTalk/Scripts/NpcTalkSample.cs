@@ -14,7 +14,7 @@ namespace Descrio.Samples.NpcTalk
     /// A sample class that demonstrates how to drive an NPC dialogue using Descrio.
     /// It uses UI Toolkit, built entirely from C# code.
     /// </summary>
-    public class NpcTalkSample : MonoBehaviour
+    internal class NpcTalkSample : MonoBehaviour
     {
         [Tooltip("The Descrio script asset to execute.")]
         [SerializeField]

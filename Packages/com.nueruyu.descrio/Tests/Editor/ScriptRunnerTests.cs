@@ -946,14 +946,11 @@ statements:
         }
 
         [Test]
-        public void ExecuteAsync_AddCallablesWithDuplicateName_ShouldThrowException()
+        public void ExecuteAsync_AddCallableWithDuplicateName_ShouldThrowException()
         {
             var parser = new YamlScriptParser();
             var provider = new InMemoryModuleProvider(new Dictionary<string, string>());
             var runner = new ScriptRunner(parser, provider);
-
-            var funcs1 = new { };
-            var funcs2 = new { };
 
             runner.AddCallable("my_func", new DelegateCallable((Arguments _, CancellationToken _) => new ValueTask<object>()));
 

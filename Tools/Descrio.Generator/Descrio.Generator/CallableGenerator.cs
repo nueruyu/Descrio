@@ -17,14 +17,14 @@ namespace Descrio.Generator
 
         public void Execute(GeneratorExecutionContext context)
         {
-            // 1. Parse the compilation to get a list of model objects
+            // Parse the compilation to get a list of model objects
             var callableClasses = Parser.GetCallableClasses(context, context.SyntaxReceiver);
             if (!callableClasses.Any())
             {
                 return;
             }
 
-            // 2. Build the source code for each wrapper class
+            // Build the source code for each wrapper class
             foreach (var classInfo in callableClasses)
             {
                 foreach (var methodInfo in classInfo.Methods)
@@ -35,9 +35,27 @@ namespace Descrio.Generator
                 }
             }
 
-            // 3. Build the registration class source code
-            var registrationSource = CodeBuilder.BuildRegistrationClass(callableClasses);
-            context.AddSource("__DescrioAddCallablesExtensions.g.cs", SourceText.From(registrationSource, Encoding.UTF8));
+            // Group classes by their accessibility
+            var publicClasses = callableClasses.Where(c => c.Accessibility == Accessibility.Public).ToList();
+            var internalClasses = callableClasses.Where(c => c.Accessibility == Accessibility.Internal).ToList();
+
+            if (publicClasses.Any())
+            {
+                var registrationSource = Callable.CodeBuilder.BuildRegistrationClass(
+                    "public",
+                    "__DescrioPublicAddCallablesExtensions",
+                    publicClasses);
+                context.AddSource("__DescrioPublicAddCallablesExtensions.g.cs", SourceText.From(registrationSource, Encoding.UTF8));
+            }
+
+            if (internalClasses.Any())
+            {
+                var registrationSource = Callable.CodeBuilder.BuildRegistrationClass(
+                    "internal",
+                    "__DescrioInternalAddCallablesExtensions",
+                    internalClasses);
+                context.AddSource("__DescrioInternalAddCallablesExtensions.g.cs", SourceText.From(registrationSource, Encoding.UTF8));
+            }
         }
     }
 }
