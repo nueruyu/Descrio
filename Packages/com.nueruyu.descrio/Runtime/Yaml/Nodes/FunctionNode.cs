@@ -5,7 +5,7 @@ using YamlDotNet.Serialization;
 
 namespace Descrio.Yaml.Nodes
 {
-    internal class FunctionNode : IInstructionNode
+    internal class FunctionNode : IStatementNode
     {
         [YamlMember(Alias = "name")]
         public string Name { get; set; }
@@ -14,16 +14,16 @@ namespace Descrio.Yaml.Nodes
         public ParameterDefinitionNode[] Parameters { get; set; } = Array.Empty<ParameterDefinitionNode>();
 
         [YamlMember(Alias = "statements")]
-        public IInstructionNode[] Statements { get; set; } = Array.Empty<IInstructionNode>();
+        public IStatementNode[] Statements { get; set; } = Array.Empty<IStatementNode>();
 
-        public IInstruction ToInstruction()
+        public IStatement ToStatement()
         {
-            var instructions = Statements.Select(s => s.ToInstruction()).ToArray();
+            var instructions = Statements.Select(s => s.ToStatement()).ToArray();
             var parameters = Parameters.Select(p => new ParameterDefinition(
                 p.Name,
                 p.Type,
                 p.DefaultValue)).ToArray();
-            return new FunctionInstruction(Name, parameters, instructions);
+            return new FunctionStatement(Name, parameters, instructions);
         }
 
         public class ParameterDefinitionNode

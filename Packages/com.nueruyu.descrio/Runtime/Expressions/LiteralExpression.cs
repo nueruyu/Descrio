@@ -10,10 +10,5 @@ namespace Descrio
         public LiteralExpression(object value) => _value = value;
 
         public object Value => _value;
-
-        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
-        {
-            return visitor.VisitAsync(this);
-        }
     }
 }

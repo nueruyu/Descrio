@@ -44,12 +44,12 @@ namespace Descrio.Yaml
         {
             if (string.IsNullOrWhiteSpace(scriptText))
             {
-                return new Module(Array.Empty<IInstruction>(), Array.Empty<string>());
+                return new Module(Array.Empty<IStatement>(), Array.Empty<string>());
             }
 
             var scriptRootNode = _deserializer.Deserialize<ScriptRootNode>(new StringReader(scriptText));
 
-            return scriptRootNode?.ToModule() ?? new Module(Array.Empty<IInstruction>(), Array.Empty<string>());
+            return scriptRootNode?.ToModule() ?? new Module(Array.Empty<IStatement>(), Array.Empty<string>());
         }
     }
 }
