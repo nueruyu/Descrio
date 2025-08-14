@@ -52,14 +52,34 @@ namespace Descrio.EditorTests
             var callables = new Dictionary<string, ICallable> { { "log", logCallable } };
             var moduleProvider = new InMemoryModuleProvider(modules);
             var parser = new YamlScriptParser();
-            return new ScriptRunner(parser, moduleProvider, callables);
+            var runner = new ScriptRunner(parser, moduleProvider);
+            foreach (var (name, callable) in callables)
+            {
+                runner.AddCallable(name, callable);
+            }
+            return runner;
         }
 
         private ScriptRunner CreateRunner(Dictionary<string, string> modules, Dictionary<string, ICallable> callables = null, Dictionary<string, Type> types = null)
         {
             var moduleProvider = new InMemoryModuleProvider(modules);
             var parser = new YamlScriptParser();
-            return new ScriptRunner(parser, moduleProvider, callables, types);
+            var runner = new ScriptRunner(parser, moduleProvider);
+            if (callables != null)
+            {
+                foreach (var (name, callable) in callables)
+                {
+                    runner.AddCallable(name, callable);
+                }
+            }
+            if (types != null)
+            {
+                foreach (var (name, type) in types)
+                {
+                    runner.AddType(name, type);
+                }
+            }
+            return runner;
         }
 
         [Test]
@@ -860,6 +880,88 @@ statements:
             var runner = CreateRunner(new() { { "/main.yaml", script } }, out _);
             var ex = Assert.ThrowsAsync<InvalidOperationException>(() => runner.ExecuteAsync("/main.yaml", "/", CancellationToken.None));
             StringAssert.Contains("Variable 'undefined_variable' is not defined", ex.Message);
+        }
+
+        public class AttributedFunctions
+        {
+            public readonly List<object> LogHistory = new();
+
+            [Callable("log_attr")]
+            public void Log(object val) => LogHistory.Add(val);
+
+            [Callable]
+            public int Add(int a, int b) => a + b;
+
+            [Callable]
+            public string Greet(string name, string greeting = "Hello") => $"{greeting}, {name}!";
+
+            [Callable("get_message")]
+            public ValueTask<string> GetMessageAsync(CancellationToken ct)
+            {
+                return new ValueTask<string>("Async message");
+            }
+        }
+
+        [Test]
+        public async Task ExecuteAsync_WithAttributedCallables_ShouldSucceed()
+        {
+            var script = @"
+statements:
+  - !let
+    name: result
+    value: !run
+      name: Add
+      args: { a: 5, b: 10 }
+  - !run
+    name: log_attr
+    args:
+      val: !expr result
+  - !let
+    name: greeting
+    value: !run
+      name: Greet
+      args:
+        name: 'Attribute'
+        greeting: 'Welcome'
+  - !run
+    name: log_attr
+    args:
+      val: !expr greeting
+  - !let
+    name: async_msg
+    value: !run
+      name: get_message
+  - !run
+    name: log_attr
+    args:
+      val: !expr async_msg
+";
+            var modules = new Dictionary<string, string> { { "/main.yaml", script } };
+            var moduleProvider = new InMemoryModuleProvider(modules);
+            var parser = new YamlScriptParser();
+            var funcs = new AttributedFunctions();
+
+            var runner = new ScriptRunner(parser, moduleProvider)
+                .AddCallables(funcs);
+
+            await runner.ExecuteAsync("/main.yaml", "/", CancellationToken.None);
+
+            CollectionAssert.AreEqual(new object[] { 15L, "Welcome, Attribute!", "Async message" }, funcs.LogHistory);
+        }
+
+        [Test]
+        public void ExecuteAsync_AddCallableWithDuplicateName_ShouldThrowException()
+        {
+            var parser = new YamlScriptParser();
+            var provider = new InMemoryModuleProvider(new Dictionary<string, string>());
+            var runner = new ScriptRunner(parser, provider);
+
+            runner.AddCallable("my_func", new DelegateCallable((Arguments _, CancellationToken _) => new ValueTask<object>()));
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                runner.AddCallable("my_func", new DelegateCallable((Arguments _, CancellationToken _) => new ValueTask<object>()));
+            });
         }
     }
 }
