@@ -10,10 +10,5 @@ namespace Descrio
         public VariableExpression(string variableName) => _variableName = variableName;
 
         public string VariableName => _variableName;
-
-        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
-        {
-            return visitor.VisitAsync(this);
-        }
     }
 }

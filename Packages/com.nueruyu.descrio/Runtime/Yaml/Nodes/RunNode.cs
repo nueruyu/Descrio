@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Descrio.Yaml.Nodes
 {
-    internal class RunNode : IInstructionNode, IExpressionNode
+    internal class RunNode : IStatementNode, IExpressionNode
     {
         [YamlMember(Alias = "name")]
         public string Name { get; set; }
@@ -13,11 +13,11 @@ namespace Descrio.Yaml.Nodes
         [YamlMember(Alias = "args")]
         public Dictionary<string, IExpressionNode> Args { get; set; }
 
-        RunInstruction ToRunInstruction() => new RunInstruction(
+        RunStatement ToRunInstruction() => new RunStatement(
             Name,
             Args?.ToDictionary(x => x.Key, x => x.Value.ToExpression()) ?? new());
 
-        public IInstruction ToInstruction() => ToRunInstruction();
+        public IStatement ToStatement() => ToRunInstruction();
 
         public IExpression ToExpression() => ToRunInstruction();
     }

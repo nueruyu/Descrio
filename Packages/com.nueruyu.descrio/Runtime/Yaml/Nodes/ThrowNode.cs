@@ -4,7 +4,7 @@ using YamlDotNet.Serialization;
 
 namespace Descrio.Yaml.Nodes
 {
-    internal class ThrowNode : IInstructionNode
+    internal class ThrowNode : IStatementNode
     {
         [YamlMember(Alias = "name")]
         public string Name { get; set; }
@@ -12,10 +12,10 @@ namespace Descrio.Yaml.Nodes
         [YamlMember(Alias = "args")]
         public Dictionary<string, IExpressionNode> Args { get; set; }
 
-        public IInstruction ToInstruction()
+        public IStatement ToStatement()
         {
             var args = Args?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToExpression()) ?? new Dictionary<string, IExpression>();
-            return new ThrowInstruction(Name, args);
+            return new ThrowStatement(Name, args);
         }
     }
 }

@@ -1,7 +1,7 @@
 namespace Descrio.Yaml.Nodes
 {
-    internal class BreakNode : IInstructionNode
+    internal class BreakNode : IStatementNode
     {
-        public IInstruction ToInstruction() => new BreakInstruction();
+        public IStatement ToStatement() => new BreakStatement();
     }
 }

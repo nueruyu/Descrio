@@ -3,7 +3,7 @@
 
 ```yaml
 imports:
-  - path/to/another_file
+  - from: path/to/another_file
 
 statements:
   - !function

@@ -1,7 +1,7 @@
 namespace Descrio.Yaml.Nodes
 {
-    internal class ContinueNode : IInstructionNode
+    internal class ContinueNode : IStatementNode
     {
-        public IInstruction ToInstruction() => new ContinueInstruction();
+        public IStatement ToStatement() => new ContinueStatement();
     }
 }

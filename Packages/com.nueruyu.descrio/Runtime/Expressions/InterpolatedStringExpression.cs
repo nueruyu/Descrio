@@ -12,10 +12,5 @@ namespace Descrio
         {
             Parts = parts;
         }
-
-        public ValueTask<TResult> AcceptAsync<TResult>(IAstVisitor<TResult> visitor)
-        {
-            return visitor.VisitAsync(this);
-        }
     }
 }

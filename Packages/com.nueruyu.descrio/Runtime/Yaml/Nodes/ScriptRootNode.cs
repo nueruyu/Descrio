@@ -8,16 +8,16 @@ namespace Descrio.Yaml.Nodes
     class ScriptRootNode
     {
         [YamlMember(Alias = "imports")]
-        public List<string> Imports { get; set; } = new();
+        public List<ImportNode> Imports { get; set; } = new();
 
         [YamlMember(Alias = "statements")]
-        public List<IInstructionNode> Statements { get; set; } = new();
+        public List<IStatementNode> Statements { get; set; } = new();
 
         public Module ToModule()
         {
-            var instructions = Statements?.Select(s => s.ToInstruction()).ToArray() ?? System.Array.Empty<IInstruction>();
-            var imports = Imports?.ToArray() ?? System.Array.Empty<string>();
-            return new Module(instructions, imports);
+            var statements = Statements?.Select(s => s.ToStatement()).ToArray() ?? System.Array.Empty<IStatement>();
+            var importPaths = Imports?.Select(i => i.From).Where(p => !string.IsNullOrEmpty(p)).ToArray() ?? System.Array.Empty<string>();
+            return new Module(statements, importPaths);
         }
     }
 }
