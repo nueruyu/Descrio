@@ -32,7 +32,10 @@ It allows you to write and dynamically execute logic for event sequences, NPC di
 
 1.  In the Unity Editor, open the Package Manager window (`Window > Package Manager`).
 2.  Click the `+` button and select `Add package from git URL...`.
-3.  Enter the repository URL: `https://github.com/nueruyu/Descrio.git` and click `Add`.
+3.  Enter the following URL and click Add:
+   ```
+   https://github.com/nueruyu/Descrio.git?path=Packages/com.nueruyu.descrio
+   ```
 
 ### 2. Create a YAML Script
 Create a YAML file, such as `MyDialogue.yaml`, in your project assets.
