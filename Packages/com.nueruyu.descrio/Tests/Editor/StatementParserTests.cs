@@ -129,6 +129,31 @@ statements:
         }
 
         [Test]
+        public void ParseExpression_Lambda_ShouldParseCorrectly()
+        {
+            var yaml = @"!lambda
+parameters:
+  - name: p1
+    type: string
+    default: 'default'
+statements:
+  - !run
+    name: log
+    args:
+      val: !expr p1";
+            var expression = _parser.ParseExpression(yaml);
+
+            Assert.IsInstanceOf<LambdaExpression>(expression);
+            var lambda = (LambdaExpression)expression;
+            Assert.AreEqual(1, lambda.Parameters.Length);
+            Assert.AreEqual("p1", lambda.Parameters[0].Name);
+            Assert.AreEqual("string", lambda.Parameters[0].Type);
+            Assert.AreEqual("default", lambda.Parameters[0].DefaultValue);
+            Assert.AreEqual(1, lambda.Statements.Length);
+            Assert.IsInstanceOf<RunStatement>(lambda.Statements[0]);
+        }
+
+        [Test]
         public void ParseStatement_TryCatch_ShouldParseCorrectly()
         {
             var yaml = @"!try
