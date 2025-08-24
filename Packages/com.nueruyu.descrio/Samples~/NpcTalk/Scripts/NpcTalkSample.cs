@@ -7,6 +7,7 @@ using Descrio;
 using Descrio.Yaml;
 using System.Collections;
 using Descrio.Parse.ModuleProviders;
+using Descrio.Parse.ModuleLoaders;
 
 namespace Descrio.Samples.NpcTalk
 {
@@ -74,9 +75,10 @@ namespace Descrio.Samples.NpcTalk
             var modules = new Dictionary<string, string> { { "/main.yaml", scriptText } };
             var moduleProvider = new InMemoryModuleProvider(modules);
             var parser = new YamlScriptParser();
+            var moduleLoader = new StringModuleLoader(moduleProvider, parser);
 
             // Register callables from this class instance using the new attribute-based system.
-            var runner = new ScriptRunner(parser, moduleProvider)
+            var runner = new ScriptRunner(moduleLoader)
                 .AddCallables(this);
 
             try

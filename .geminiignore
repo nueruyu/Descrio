@@ -1,0 +1,113 @@
+# Unity files
+*.asmdef
+*.anim
+*.asset
+*.brush
+*.controller
+*.flare
+*.fontsettings
+*.giparams
+*.guiskin
+*.mask
+*.mat
+*.meta
+*.mixer
+*.overrideController
+*.physicMaterial
+*.physicsMaterial2D
+*.playable
+*.prefab
+*.preset
+*.renderTexture
+*.shadervariants
+*.spriteatlas
+*.terrainlayer
+*.unity
+
+# Unity binary files
+*.bundle
+*.cubemap
+*.unitypackage
+
+# Unity specific assets
+*-[Nn]av[Mm]esh.asset
+*-[Tt]errain.asset
+*LightingData.asset
+*OcclusionCullingData.asset
+
+# Documents
+*.pdf
+
+# Image formats
+*.afdesign
+*.afphoto
+*.ai
+*.bmp
+*.dds
+*.jpg
+*.gif
+*.iff
+*.pict
+*.png
+*.psd
+*.svg
+*.tga
+*.tiff
+*.webp
+
+# Audio formats
+*.aif
+*.aiff
+*.it
+*.mod
+*.mp3
+*.ogg
+*.s3m
+*.wav
+*.xm
+
+# Video formats
+*.mov
+*.avi
+*.asf
+*.mpg
+*.mpeg
+*.mp4
+
+# 3D formats
+*.3ds
+*.3dm
+*.abc
+*.blend
+*.c4d
+*.dae
+*.dfx
+*.FBX
+*.fbx
+*.glb
+*.gltf
+*.lwo
+*.lwo2
+*.lxo
+*.obj
+*.ma
+*.max
+*.mb
+
+# Font formats
+*.ttf
+*.otf
+
+# Bundles and binaries
+*.dll
+*.exe
+*.mdb
+*.pdb
+*.so
+
+# Packaging
+*.zip
+*.7z
+*.gz
+*.rar
+*.tar
