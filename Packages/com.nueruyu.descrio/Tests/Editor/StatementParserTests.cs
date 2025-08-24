@@ -111,8 +111,10 @@ parameters:
     type: string
     default: 'default'
 statements:
-  - !return
-    value: !expr p1";
+  - !run
+    name: log
+    args:
+      val: !expr p1";
             var statement = _parser.ParseStatement(yaml);
 
             Assert.IsInstanceOf<FunctionStatement>(statement);
@@ -122,7 +124,8 @@ statements:
             Assert.AreEqual("p1", func.Parameters[0].Name);
             Assert.AreEqual("string", func.Parameters[0].Type);
             Assert.AreEqual("default", func.Parameters[0].DefaultValue);
-            Assert.IsInstanceOf<ReturnStatement>(func.Statements[0]);
+            Assert.AreEqual(1, func.Statements.Length);
+            Assert.IsInstanceOf<RunStatement>(func.Statements[0]);
         }
 
         [Test]
