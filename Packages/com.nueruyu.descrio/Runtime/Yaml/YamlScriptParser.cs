@@ -37,19 +37,32 @@ namespace Descrio.Yaml
                 .WithTypeConverter(new ExpressionStringNodeTypeConverter())
                 .WithTypeConverter(new ContinueNodeTypeConverter())
                 .WithTypeConverter(new BreakNodeTypeConverter())
+                .WithTypeConverter(new ReturnNodeTypeConverter())
                 .Build();
         }
 
-        public Module Parse(string scriptText)
+        public Module Parse(string text)
         {
-            if (string.IsNullOrWhiteSpace(scriptText))
+            if (string.IsNullOrWhiteSpace(text))
             {
                 return new Module(Array.Empty<IStatement>(), Array.Empty<string>());
             }
 
-            var scriptRootNode = _deserializer.Deserialize<ScriptRootNode>(new StringReader(scriptText));
+            var scriptRootNode = _deserializer.Deserialize<ScriptRootNode>(new StringReader(text));
 
             return scriptRootNode?.ToModule() ?? new Module(Array.Empty<IStatement>(), Array.Empty<string>());
+        }
+
+        public IStatement ParseStatement(string text)
+        {
+            var statementNode = _deserializer.Deserialize<IStatementNode>(new StringReader(text));
+            return statementNode?.ToStatement();
+        }
+
+        public IExpression ParseExpression(string text)
+        {
+            var expressionNode = _deserializer.Deserialize<IExpressionNode>(new StringReader(text));
+            return expressionNode?.ToExpression();
         }
     }
 }

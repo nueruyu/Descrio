@@ -10,6 +10,6 @@ namespace Descrio.Yaml.Nodes
         [YamlMember(Alias = "value")]
         public IExpressionNode Value { get; set; }
 
-        public IStatement ToStatement() => new AssignStatement(Name, Value.ToExpression());
+        public IStatement ToStatement() => new AssignStatement(new VariableExpression(Name), Value.ToExpression());
     }
 }
