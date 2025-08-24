@@ -99,9 +99,52 @@ namespace Descrio.Execution
             var valueResult = await ExecuteAsync(statement.ValueExpression);
             if (valueResult.Flow != FlowState.Normal)
                 return valueResult;
+            var value = valueResult.Value;
 
-            _context.Variables.Assign(statement.Name, valueResult.Value);
-            return VisitResult.Normal;
+            if (statement.Target is VariableExpression varExpr)
+            {
+                _context.Variables.Assign(varExpr.VariableName, value);
+                return VisitResult.Normal;
+            }
+
+            if (statement.Target is MemberAccessExpression memberAccessExpr)
+            {
+                var objResult = await ExecuteAsync(memberAccessExpr.ObjectExpression);
+                if (objResult.Flow != FlowState.Normal)
+                    return objResult;
+
+                var targetObject = objResult.Value;
+                if (targetObject == null)
+                {
+                    throw new NullReferenceException($"Attempted to assign to member '{memberAccessExpr.MemberName}' on a null object.");
+                }
+
+                if (targetObject is IDictionary dict)
+                {
+                    // For dictionaries, we assume the key is a string for member access
+                    dict[memberAccessExpr.MemberName] = value;
+                    return VisitResult.Normal;
+                }
+
+                var type = targetObject.GetType();
+                var property = type.GetProperty(memberAccessExpr.MemberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                if (property != null && property.CanWrite)
+                {
+                    property.SetValue(targetObject, value);
+                    return VisitResult.Normal;
+                }
+
+                var field = type.GetField(memberAccessExpr.MemberName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                if (field != null)
+                {
+                    field.SetValue(targetObject, value);
+                    return VisitResult.Normal;
+                }
+
+                throw new InvalidOperationException($"Member '{memberAccessExpr.MemberName}' not found or is not assignable on type '{type.Name}'.");
+            }
+
+            throw new InvalidOperationException("Invalid assignment target.");
         }
 
         private async ValueTask<VisitResult> ExecuteAsync(RunStatement statement)

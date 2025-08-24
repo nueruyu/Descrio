@@ -5,12 +5,12 @@ namespace Descrio
 {
     public class AssignStatement : IStatement
     {
-        public string Name { get; }
+        public IExpression Target { get; }
         public IExpression ValueExpression { get; }
 
-        public AssignStatement(string name, IExpression valueExpression)
+        public AssignStatement(IExpression target, IExpression valueExpression)
         {
-            Name = name;
+            Target = target;
             ValueExpression = valueExpression;
         }
     }
