@@ -110,8 +110,10 @@ public class DialogueManager : MonoBehaviour
         // The YAML parser
         var parser = new YamlScriptParser();
 
+        var moduleLoader = new StringModuleLoader(moduleProvider, parser);
+
         // Initialize the ScriptRunner and register the Callable methods from this class
-        var runner = new ScriptRunner(parser, moduleProvider)
+        var runner = new ScriptRunner(moduleLoader)
             .AddCallables(this);
 
         // Execute the script
