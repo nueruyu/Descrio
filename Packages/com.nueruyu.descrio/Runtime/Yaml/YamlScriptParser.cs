@@ -22,6 +22,7 @@ namespace Descrio.Yaml
                 .WithTagMapping("!run", typeof(RunNode))
                 .WithTagMapping("!dispatch", typeof(DispatchNode))
                 .WithTagMapping("!function", typeof(FunctionNode))
+                .WithTagMapping("!lambda", typeof(LambdaNode))
                 .WithTagMapping("!when", typeof(WhenNode))
                 .WithTagMapping("!for", typeof(ForNode))
                 .WithTagMapping("!while", typeof(WhileNode))

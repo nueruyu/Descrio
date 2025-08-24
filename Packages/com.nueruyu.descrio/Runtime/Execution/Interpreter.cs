@@ -68,6 +68,7 @@ namespace Descrio.Execution
                 ListExpression e => ExecuteAsync(e),
                 DictionaryExpression e => ExecuteAsync(e),
                 MemberAccessExpression e => ExecuteAsync(e),
+                LambdaExpression e => ExecuteAsync(e),
                 DispatchStatement e => ExecuteAsync(e),
                 RunStatement e => ExecuteAsync(e),
                 _ => throw new NotImplementedException($"Execution for {expression.GetType().Name} is not implemented.")
@@ -150,7 +151,23 @@ namespace Descrio.Execution
         private async ValueTask<VisitResult> ExecuteAsync(RunStatement statement)
         {
             if (!_context.Callables.TryGet(statement.Name, out var callable))
-                throw new InvalidOperationException($"Callable '{statement.Name}' not found.");
+            {
+                if (_context.Variables.TryGet(statement.Name, out var variableValue))
+                {
+                    if (variableValue is ICallable variableAsCallable)
+                    {
+                        callable = variableAsCallable;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Variable '{statement.Name}' is not a callable function.");
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Callable '{statement.Name}' not found.");
+                }
+            }
 
             var args = new Arguments();
             foreach (var (key, valueExpr) in statement.ArgExpressions)
@@ -167,15 +184,39 @@ namespace Descrio.Execution
 
         private ValueTask<VisitResult> ExecuteAsync(FunctionStatement statement)
         {
-            async ValueTask<object> CallAsync(Arguments args, ExecutionContext context)
-            {
-                var localContext = _context.CreateChildContext(context.CancellationToken);
+            var callable = CreateCallable(statement.Parameters, statement.Statements, _context);
+            _context.Callables.Register(statement.Name, callable);
+            return new ValueTask<VisitResult>(VisitResult.Normal);
+        }
 
-                foreach (var param in statement.Parameters)
+        private ValueTask<VisitResult> ExecuteAsync(LambdaExpression expression)
+        {
+            var callable = CreateCallable(expression.Parameters, expression.Statements, _context);
+            return new ValueTask<VisitResult>(VisitResult.NormalWithValue(callable));
+        }
+
+        /// <summary>
+        /// Creates a callable delegate that encapsulates the logic for executing a function's body.
+        /// This method is shared by both named functions and lambda expressions.
+        /// </summary>
+        /// <param name="parameters">The list of parameter definitions for the function.</param>
+        /// <param name="statements">The array of statements that form the function's body.</param>
+        /// <param name="closureContext">The execution context at the point of definition, which will be captured to form a closure.</param>
+        /// <returns>An ICallable instance ready to be executed.</returns>
+        private ICallable CreateCallable(
+            ParameterDefinition[] parameters,
+            IStatement[] statements,
+            ExecutionContext closureContext)
+        {
+            async ValueTask<object> CallAsync(Arguments args, ExecutionContext callSiteContext)
+            {
+                var localContext = closureContext.CreateChildContext(callSiteContext.CancellationToken);
+
+                foreach (var param in parameters)
                 {
                     if (args.TryGetValue(param.Name, out var value))
                     {
-                        localContext.Variables.Define(param.Name, value, isMutable: true); // Function params are mutable
+                        localContext.Variables.Define(param.Name, value, isMutable: true);
                     }
                     else
                     {
@@ -184,9 +225,10 @@ namespace Descrio.Execution
                 }
 
                 var interpreter = new Interpreter(localContext);
-                foreach (var stmt in statement.Statements)
+                foreach (var stmt in statements)
                 {
                     var result = await interpreter.ExecuteAsync(stmt);
+
                     if (result.Flow == FlowState.Return)
                     {
                         return result.Value;
@@ -196,12 +238,10 @@ namespace Descrio.Execution
                         throw new InvalidOperationException($"'{result.Flow}' is not valid outside of a loop.");
                     }
                 }
-                return null; // Implicit return null
+                return null;
             }
 
-            var callable = new DelegateCallable(CallAsync);
-            _context.Callables.Register(statement.Name, callable);
-            return new ValueTask<VisitResult>(VisitResult.Normal);
+            return new DelegateCallable(CallAsync);
         }
 
         private async ValueTask<VisitResult> ExecuteAsync(WhenStatement statement)
