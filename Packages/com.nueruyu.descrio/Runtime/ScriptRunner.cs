@@ -12,15 +12,13 @@ namespace Descrio
 {
     public class ScriptRunner
     {
-        private readonly IScriptParser _parser;
-        private readonly IModuleProvider _moduleProvider;
+        private readonly IModuleLoader _moduleLoader;
         private readonly Dictionary<string, ICallable> _callables = new();
         private readonly Dictionary<string, Type> _types = new();
 
-        public ScriptRunner(IScriptParser parser, IModuleProvider moduleProvider)
+        public ScriptRunner(IModuleLoader moduleLoader)
         {
-            _parser = parser;
-            _moduleProvider = moduleProvider;
+            _moduleLoader = moduleLoader;
         }
 
         /// <summary>
@@ -110,8 +108,7 @@ namespace Descrio
                 return existingModule;
             }
 
-            var scriptText = await _moduleProvider.ReadContentAsync(path, globalContext.CancellationToken);
-            var module = _parser.Parse(scriptText);
+            var module = await _moduleLoader.LoadAsync(path, globalContext.CancellationToken);
 
             loadedModules.RegisterModule(path, module);
 
