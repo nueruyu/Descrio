@@ -169,7 +169,7 @@ namespace Descrio.Execution
         {
             async ValueTask<object> CallAsync(Arguments args, ExecutionContext context)
             {
-                var localContext = context.CreateChildContext();
+                var localContext = _context.CreateChildContext(context.CancellationToken);
 
                 foreach (var param in statement.Parameters)
                 {

@@ -26,6 +26,11 @@ namespace Descrio.Execution
 
         public ExecutionContext CreateChildContext()
         {
+            return CreateChildContext(CancellationToken);
+        }
+
+        public ExecutionContext CreateChildContext(CancellationToken cancellationToken)
+        {
             var childVariableRegistry = new VariableRegistry(Variables);
             var childCallableRegistry = new CallableRegistry(Callables);
             var childClassRegistry = new ClassRegistry(Classes);
@@ -35,12 +40,7 @@ namespace Descrio.Execution
                 childCallableRegistry,
                 childVariableRegistry,
                 childClassRegistry,
-                CancellationToken);
-        }
-
-        public ExecutionContext CreateForNewPath(ModulePath newPath)
-        {
-            return new ExecutionContext(newPath, Callables, Variables, Classes, CancellationToken);
+                cancellationToken);
         }
     }
 }
