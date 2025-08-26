@@ -5,9 +5,9 @@ namespace Descrio.Yaml.Nodes
 {
     internal class DictionaryExpressionNode : IExpressionNode
     {
-        public Dictionary<string, IExpressionNode> Entries { get; set; }
+        public Dictionary<IExpressionNode, IExpressionNode> Entries { get; set; }
 
-        public DictionaryExpressionNode(Dictionary<string, IExpressionNode> entries)
+        public DictionaryExpressionNode(Dictionary<IExpressionNode, IExpressionNode> entries)
         {
             Entries = entries;
         }
@@ -15,7 +15,7 @@ namespace Descrio.Yaml.Nodes
         public IExpression ToExpression()
         {
             var expressions = Entries.ToDictionary(
-                kvp => kvp.Key,
+                kvp => kvp.Key.ToExpression(),
                 kvp => kvp.Value.ToExpression());
             return new DictionaryExpression(expressions);
         }

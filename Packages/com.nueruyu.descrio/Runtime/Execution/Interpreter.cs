@@ -457,15 +457,21 @@ namespace Descrio.Execution
 
         private async ValueTask<VisitResult> ExecuteAsync(DictionaryExpression expression)
         {
-            var results = new Dictionary<string, object>(StringComparer.Ordinal);
-            foreach (var (key, valueExpr) in expression.Entries)
+            var results = new Dictionary<object, object>();
+            foreach (var (keyExpr, valueExpr) in expression.Entries)
             {
+                var keyResult = await ExecuteAsync(keyExpr);
+                if (keyResult.Flow != FlowState.Normal)
+                {
+                    return keyResult;
+                }
+
                 var valueResult = await ExecuteAsync(valueExpr);
                 if (valueResult.Flow != FlowState.Normal)
                 {
                     return valueResult;
                 }
-                results[key] = valueResult.Value;
+                results[keyResult.Value] = valueResult.Value;
             }
             return VisitResult.NormalWithValue(results);
         }
