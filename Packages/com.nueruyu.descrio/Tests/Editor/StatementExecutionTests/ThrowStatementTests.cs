@@ -78,5 +78,17 @@ namespace Descrio.EditorTests.StatementExecutionTests
             var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => await Env.ExecuteAsync(throwStatement));
             StringAssert.Contains("'NotAnError' is not a valid and registered exception class", ex.Message);
         }
+
+        [Test]
+        public void Throw_RegisteredClassNameIsCaseSensitive_ShouldThrow()
+        {
+            // Arrange
+            Env.RegisterClass("MyError", typeof(InvalidOperationException));
+            var throwStatement = Throw("myerror"); // Using incorrect case
+
+            // Act & Assert
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(async () => await Env.ExecuteAsync(throwStatement));
+            StringAssert.Contains("'myerror' is not a valid and registered exception class", ex.Message);
+        }
     }
 }

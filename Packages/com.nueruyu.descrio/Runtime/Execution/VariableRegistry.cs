@@ -17,7 +17,7 @@ namespace Descrio.Execution
             }
         }
 
-        private readonly Dictionary<string, Variable> _variables = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Variable> _variables = new(StringComparer.Ordinal);
         private readonly VariableRegistry _parent;
 
         public VariableRegistry(VariableRegistry parent = null)
