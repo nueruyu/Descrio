@@ -32,5 +32,10 @@ namespace Descrio.Execution
             callable = null;
             return false;
         }
+
+        public IReadOnlyDictionary<string, ICallable> GetDefinedCallables()
+        {
+            return new Dictionary<string, ICallable>(_callables, _callables.Comparer);
+        }
     }
 }

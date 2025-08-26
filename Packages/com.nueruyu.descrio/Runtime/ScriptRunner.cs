@@ -3,7 +3,6 @@ using Descrio.Parse;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using ExecutionContext = Descrio.Execution.ExecutionContext;
@@ -12,6 +11,18 @@ namespace Descrio
 {
     public class ScriptRunner
     {
+        private class ModuleExecutionResult
+        {
+            public CallableRegistry Callables { get; }
+            public ClassRegistry Classes { get; }
+
+            public ModuleExecutionResult(CallableRegistry callables, ClassRegistry classes)
+            {
+                Callables = callables;
+                Classes = classes;
+            }
+        }
+
         private readonly IModuleLoader _moduleLoader;
         private readonly Dictionary<string, ICallable> _callables = new();
         private readonly Dictionary<string, Type> _types = new();
@@ -56,7 +67,7 @@ namespace Descrio
             string currentWorkingDirectory,
             CancellationToken cancellationToken = default)
         {
-            var loadedModules = new ModuleRegistry();
+            var executedModules = new Dictionary<ModulePath, ModuleExecutionResult>();
             var cwdPath = new ModulePath(currentWorkingDirectory);
 
             var globalCallables = new CallableRegistry();
@@ -85,56 +96,64 @@ namespace Descrio
             globalClasses.Register("ArgumentError", typeof(ArgumentException));
             globalClasses.Register("FileNotFoundError", typeof(FileNotFoundException));
 
-            var entrypointModulePath = cwdPath.Resolve(entrypointPath);
             var globalContext = new ExecutionContext(
-                entrypointModulePath.GetDirectoryPath(),
+                cwdPath,
                 globalCallables,
                 globalVariables,
                 globalClasses,
                 cancellationToken);
 
-            await LoadModuleAndDependenciesAsync(entrypointModulePath, globalContext, loadedModules);
+            var entrypointModulePath = cwdPath.Resolve(entrypointPath);
+            await LoadAndExecuteModuleAsync(entrypointModulePath, globalContext, executedModules);
         }
 
-        private async Task<Module> LoadModuleAndDependenciesAsync(
+        private async Task<ModuleExecutionResult> LoadAndExecuteModuleAsync(
             ModulePath path,
             ExecutionContext globalContext,
-            ModuleRegistry loadedModules)
+            Dictionary<ModulePath, ModuleExecutionResult> executedModules)
         {
             globalContext.CancellationToken.ThrowIfCancellationRequested();
 
-            if (loadedModules.TryGetModule(path, out var existingModule))
+            if (executedModules.TryGetValue(path, out var existingResult))
             {
-                return existingModule;
+                return existingResult;
             }
 
             var module = await _moduleLoader.LoadAsync(path, globalContext.CancellationToken);
 
-            loadedModules.RegisterModule(path, module);
+            var moduleCallableRegistry = new CallableRegistry(globalContext.Callables);
+            var moduleClassRegistry = new ClassRegistry(globalContext.Classes);
+            var moduleVariableRegistry = new VariableRegistry(globalContext.Variables);
 
-            // Create a context for the current module. It needs the correct directory path
-            // to resolve its own dependencies.
             var moduleExecutionContext = new ExecutionContext(
                 path.GetDirectoryPath(),
-                globalContext.Callables,
-                new VariableRegistry(globalContext.Variables), // Create a new, isolated variable registry for this module.
-                globalContext.Classes,
+                moduleCallableRegistry,
+                moduleVariableRegistry,
+                moduleClassRegistry,
                 globalContext.CancellationToken);
 
-            // When loading dependencies, we resolve their paths relative to the CURRENT module,
-            // but we pass the GLOBAL context down to the recursive call. This ensures
-            // that all modules are peers under the global scope, rather than being nested.
             foreach (var importPath in module.ImportPaths)
             {
                 var absoluteImportPath = moduleExecutionContext.CurrentDirectory.Resolve(importPath);
-                await LoadModuleAndDependenciesAsync(absoluteImportPath, globalContext, loadedModules);
+                var dependencyResult = await LoadAndExecuteModuleAsync(absoluteImportPath, globalContext, executedModules);
+
+                foreach (var (name, callable) in dependencyResult.Callables.GetDefinedCallables())
+                {
+                    moduleCallableRegistry.Register(name, callable);
+                }
+
+                foreach (var (name, type) in dependencyResult.Classes.GetDefinedClasses())
+                {
+                    moduleClassRegistry.Register(name, type);
+                }
             }
 
-            // Execute this module's statements using its own isolated context.
             var interpreter = new Interpreter(moduleExecutionContext);
             await interpreter.ExecuteAsync(module);
 
-            return module;
+            var result = new ModuleExecutionResult(moduleCallableRegistry, moduleClassRegistry);
+            executedModules[path] = result;
+            return result;
         }
     }
 }

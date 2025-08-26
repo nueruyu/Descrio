@@ -152,5 +152,38 @@ namespace Descrio.EditorTests
             // Assert
             CollectionAssert.AreEqual(new object[] { "value_from_b" }, _logHistory);
         }
+
+        [Test]
+        public void ExecuteAsync_SiblingModuleFunctions_AreNotAccessible()
+        {
+            var modules = new Dictionary<string, Module>
+            {
+                { "/moduleA.yaml", new Module(
+                    statements: new IStatement[]
+                    {
+                        Function("func_A").Body(Return(Literal("from A"))).Build()
+                    },
+                    importPaths: Array.Empty<string>())
+                },
+                { "/moduleB.yaml", new Module(
+                    statements: new IStatement[]
+                    {
+                        Run("func_A").Build()
+                    },
+                    importPaths: Array.Empty<string>())
+                },
+                { "/main.yaml", new Module(
+                    statements: Array.Empty<IStatement>(),
+                    importPaths: new[] { "moduleA.yaml", "moduleB.yaml" })
+                }
+            };
+            var loader = new InMemoryModuleLoader(modules);
+            var runner = new ScriptRunner(loader);
+
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await runner.ExecuteAsync("/main.yaml", "/")
+            );
+            StringAssert.Contains("Callable 'func_A' not found", ex.Message);
+        }
     }
 }
