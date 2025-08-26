@@ -6,7 +6,7 @@ namespace Descrio.Execution
 {
     public class CallableRegistry
     {
-        private readonly Dictionary<string, ICallable> _callables = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ICallable> _callables = new(StringComparer.Ordinal);
         private readonly CallableRegistry _parent;
 
         public CallableRegistry(CallableRegistry parent = null)

@@ -5,7 +5,7 @@ namespace Descrio.Execution
 {
     public class ClassRegistry
     {
-        private readonly Dictionary<string, Type> _classes = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Type> _classes = new(StringComparer.Ordinal);
         private readonly ClassRegistry _parent;
 
         public ClassRegistry(ClassRegistry parent = null)

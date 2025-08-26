@@ -41,5 +41,23 @@ namespace Descrio.EditorTests.StatementExecutionTests
             Assert.IsNull(result.Value);
             CollectionAssert.AreEqual(new[] { "done" }, Env.LogHistory);
         }
+
+        [Test]
+        public void Function_CallIsCaseSensitive_ShouldThrow()
+        {
+            // Arrange
+            var definition = Function("myFunc").Body(Return(Literal(true)));
+
+            // Act
+            var ex = Assert.ThrowsAsync<System.InvalidOperationException>(async () =>
+            {
+                await Env.ExecuteAsync(definition);
+                // This should fail because 'myfunc' is not 'myFunc'
+                await Env.ExecuteAsync(Run("myfunc"));
+            });
+
+            // Assert
+            StringAssert.Contains("Callable 'myfunc' not found", ex.Message);
+        }
     }
 }
