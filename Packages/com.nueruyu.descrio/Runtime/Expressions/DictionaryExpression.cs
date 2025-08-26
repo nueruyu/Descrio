@@ -1,16 +1,14 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using Descrio.Execution;
 
 namespace Descrio
 {
     public class DictionaryExpression : IExpression
     {
-        public IReadOnlyDictionary<string, IExpression> Entries { get; }
+        public IReadOnlyDictionary<IExpression, IExpression> Entries { get; }
 
-        public DictionaryExpression(IReadOnlyDictionary<string, IExpression> entries)
+        public DictionaryExpression(IReadOnlyDictionary<IExpression, IExpression> entries)
         {
-            Entries = entries ?? new Dictionary<string, IExpression>();
+            Entries = entries ?? new Dictionary<IExpression, IExpression>();
         }
     }
 }

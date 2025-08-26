@@ -1,7 +1,5 @@
 using System;
 using Descrio.Parse;
-using Descrio.Parse.Expressions;
-using YamlDotNet.Core.Events;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 using Descrio.Yaml.Nodes;
@@ -42,7 +40,7 @@ namespace Descrio.Yaml.Serialization
 
                 case Dictionary<object, object> dict:
                     return new DictionaryExpressionNode(dict.ToDictionary(
-                        kvp => kvp.Key.ToString(),
+                        kvp => ConvertItem(kvp.Key),
                         kvp => ConvertItem(kvp.Value)
                     ));
 

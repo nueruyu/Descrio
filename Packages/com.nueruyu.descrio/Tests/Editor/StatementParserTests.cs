@@ -252,17 +252,27 @@ default:
         {
             var yaml = @"{
   key1: 'value1',
-  key2: 123,
-  key3: !expr my_var
+  123: 456,
+  !expr my_var: !expr my_val
 }";
             var expression = _parser.ParseExpression(yaml);
 
             Assert.IsInstanceOf<DictionaryExpression>(expression);
             var dict = (DictionaryExpression)expression;
             Assert.AreEqual(3, dict.Entries.Count);
-            Assert.IsInstanceOf<LiteralExpression>(dict.Entries["key1"]);
-            Assert.IsInstanceOf<LiteralExpression>(dict.Entries["key2"]);
-            Assert.IsInstanceOf<VariableExpression>(dict.Entries["key3"]);
+
+            var entry1 = dict.Entries.Single(kvp => kvp.Key is LiteralExpression l && l.Value.Equals("key1"));
+            Assert.IsInstanceOf<LiteralExpression>(entry1.Value);
+            Assert.AreEqual("value1", ((LiteralExpression)entry1.Value).Value);
+
+            var entry2 = dict.Entries.Single(kvp => kvp.Key is LiteralExpression l && l.Value.Equals(123L));
+            Assert.IsInstanceOf<LiteralExpression>(entry2.Value);
+            Assert.AreEqual(456L, ((LiteralExpression)entry2.Value).Value);
+
+            var entry3 = dict.Entries.Single(kvp => kvp.Key is VariableExpression);
+            Assert.AreEqual("my_var", ((VariableExpression)entry3.Key).VariableName);
+            Assert.IsInstanceOf<VariableExpression>(entry3.Value);
+            Assert.AreEqual("my_val", ((VariableExpression)entry3.Value).VariableName);
         }
 
         [Test]
