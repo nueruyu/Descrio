@@ -33,5 +33,10 @@ namespace Descrio.Execution
             type = null;
             return false;
         }
+
+        public IReadOnlyDictionary<string, Type> GetDefinedClasses()
+        {
+            return new Dictionary<string, Type>(_classes, _classes.Comparer);
+        }
     }
 }
