@@ -1,30 +1,28 @@
-[attr]unity-yaml-file -text merge=unityyamlmerge linguist-generated
-
 # Unity files
-*.asmdef unity-yaml-file -linguist-generated
-*.anim unity-yaml-file
-*.asset unity-yaml-file
-*.brush unity-yaml-file
-*.controller unity-yaml-file
-*.flare unity-yaml-file
-*.fontsettings unity-yaml-file
-*.giparams unity-yaml-file
-*.guiskin unity-yaml-file
-*.mask unity-yaml-file
-*.mat unity-yaml-file
-*.meta unity-yaml-file
-*.mixer unity-yaml-file
-*.overrideController unity-yaml-file
-*.physicMaterial unity-yaml-file
-*.physicsMaterial2D unity-yaml-file
-*.playable unity-yaml-file
-*.prefab unity-yaml-file
-*.preset unity-yaml-file
-*.renderTexture unity-yaml-file
-*.shadervariants unity-yaml-file
-*.spriteatlas unity-yaml-file
-*.terrainlayer unity-yaml-file
-*.unity unity-yaml-file
+*.asmdef -text merge=unityyamlmerge
+*.anim -text merge=unityyamlmerge linguist-generated
+*.asset -text merge=unityyamlmerge linguist-generated
+*.brush -text merge=unityyamlmerge linguist-generated
+*.controller -text merge=unityyamlmerge linguist-generated
+*.flare -text merge=unityyamlmerge linguist-generated
+*.fontsettings -text merge=unityyamlmerge linguist-generated
+*.giparams -text merge=unityyamlmerge linguist-generated
+*.guiskin -text merge=unityyamlmerge linguist-generated
+*.mask -text merge=unityyamlmerge linguist-generated
+*.mat -text merge=unityyamlmerge linguist-generated
+*.meta -text merge=unityyamlmerge linguist-generated
+*.mixer -text merge=unityyamlmerge linguist-generated
+*.overrideController -text merge=unityyamlmerge linguist-generated
+*.physicMaterial -text merge=unityyamlmerge linguist-generated
+*.physicsMaterial2D -text merge=unityyamlmerge linguist-generated
+*.playable -text merge=unityyamlmerge linguist-generated
+*.prefab -text merge=unityyamlmerge linguist-generated
+*.preset -text merge=unityyamlmerge linguist-generated
+*.renderTexture -text merge=unityyamlmerge linguist-generated
+*.shadervariants -text merge=unityyamlmerge linguist-generated
+*.spriteatlas -text merge=unityyamlmerge linguist-generated
+*.terrainlayer -text merge=unityyamlmerge linguist-generated
+*.unity -text merge=unityyamlmerge linguist-generated
 
 # Unity binary files
 *.bundle binary
