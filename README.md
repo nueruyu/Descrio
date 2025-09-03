@@ -1,11 +1,8 @@
-
 # Descrio
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Descrio** is a simple, YAML/JSON-based scripting interpreter designed to be embedded in Unity projects.
-
-It allows you to write and dynamically execute logic for event sequences, NPC dialogues, quest progression, and more using human-readable YAML files, without needing to recompile C# code.
+**Descrio** is a simple, YAML-based scripting interpreter designed to be embedded in Unity projects. It allows you to write and dynamically execute logic for event sequences, NPC dialogues, quest progression, and more using human-readable YAML files, without needing to recompile C# code.
 
 ### Why use Descrio?
 
@@ -26,18 +23,18 @@ It allows you to write and dynamically execute logic for event sequences, NPC di
 *   **Module System**: Split and reuse scripts using the `imports` keyword.
 *   **Expression Evaluation**: Evaluate mathematical, comparison, and logical operations within an `!expr` tag (e.g., `health > 50`, `name == 'hero'`).
 
-## Quick Start
-
-### 1. Installation
+## Installation
 
 1.  In the Unity Editor, open the Package Manager window (`Window > Package Manager`).
 2.  Click the `+` button and select `Add package from git URL...`.
 3.  Enter the following URL and click Add:
    ```
-   https://github.com/nueruyu/Descrio.git?path=Packages/com.nueruyu.descrio
+   https://github.com/nueruyu/Descrio.git?path=Descrio.Unity/Packages/com.nueruyu.descrio
    ```
 
-### 2. Create a YAML Script
+## Quick Start
+
+### 1. Create a YAML Script
 Create a YAML file, such as `MyDialogue.yaml`, in your project assets.
 
 **`MyDialogue.yaml`:**
@@ -80,7 +77,7 @@ statements:
           text: "......"
 ```
 
-### 3. Run the Script from C#
+### 2. Run the Script from C#
 Create a C# class to execute the script.
 
 **`DialogueManager.cs`:**
@@ -176,6 +173,33 @@ Descrio uses custom YAML tags to represent commands.
 | `!try` | Defines an exception handling block. | `!try { statements: [...], catch: [...], finally: [...] }` |
 | `!throw` | Throws an exception. | `!throw { name: InvalidOperationError, args: { ... } }` |
 | `!expr` | Evaluates a string as an expression. | `!expr "score > 100 && is_clear == false"` |
+
+## For Contributors & Development Setup
+
+This project has been structured to separate the core, platform-agnostic logic from the Unity-specific environment. If you wish to contribute, please familiarize yourself with the following structure and workflow.
+
+### Project Structure
+```
+/
+├── src/
+│   ├── Descrio.Core/        # The core .NET Standard library (interpreter, parser, etc.)
+│   └── Descrio.Generator/   # The source generator for the [Callable] attribute.
+├── tests/
+│   └── Descrio.Core.Tests/  # NUnit tests for the core library.
+└── Descrio.Unity/
+    ├── Packages/
+    │   └── com.nueruyu.descrio/ # The UPM package source (consumes DLLs from Descrio.Core).
+    └── ...                  # The Unity project for samples and integration testing.
+```
+
+### Development Workflow
+
+1.  **Clone the repository.**
+2.  **Build the Core Library:** Open a terminal at the repository root and run `dotnet build`.
+    *   This compiles the `Descrio.Core` project.
+    *   A post-build step will automatically copy the necessary DLLs (`Descrio.Core.dll` and `YamlDotNet.dll`) into the `Descrio.Unity/Packages/com.nueruyu.descrio/Runtime/` directory.
+3.  **Open in Unity:** Open the `Descrio.Unity` folder as a project in Unity Hub. Any changes you make to the core library will be reflected in this project after you rebuild.
+4.  **Run Tests:** To run the fast, non-Unity tests, use `dotnet test` from the root directory.
 
 ## License
 
