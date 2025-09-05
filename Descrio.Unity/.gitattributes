@@ -1,0 +1,36 @@
+# Unity files
+*.asmdef -text merge=unityyamlmerge
+*.anim -text merge=unityyamlmerge linguist-generated
+*.asset -text merge=unityyamlmerge linguist-generated
+*.brush -text merge=unityyamlmerge linguist-generated
+*.controller -text merge=unityyamlmerge linguist-generated
+*.flare -text merge=unityyamlmerge linguist-generated
+*.fontsettings -text merge=unityyamlmerge linguist-generated
+*.giparams -text merge=unityyamlmerge linguist-generated
+*.guiskin -text merge=unityyamlmerge linguist-generated
+*.mask -text merge=unityyamlmerge linguist-generated
+*.mat -text merge=unityyamlmerge linguist-generated
+*.meta -text merge=unityyamlmerge linguist-generated
+*.mixer -text merge=unityyamlmerge linguist-generated
+*.overrideController -text merge=unityyamlmerge linguist-generated
+*.physicMaterial -text merge=unityyamlmerge linguist-generated
+*.physicsMaterial2D -text merge=unityyamlmerge linguist-generated
+*.playable -text merge=unityyamlmerge linguist-generated
+*.prefab -text merge=unityyamlmerge linguist-generated
+*.preset -text merge=unityyamlmerge linguist-generated
+*.renderTexture -text merge=unityyamlmerge linguist-generated
+*.shadervariants -text merge=unityyamlmerge linguist-generated
+*.spriteatlas -text merge=unityyamlmerge linguist-generated
+*.terrainlayer -text merge=unityyamlmerge linguist-generated
+*.unity -text merge=unityyamlmerge linguist-generated
+
+# Unity binary files
+*.bundle binary
+*.cubemap binary
+*.unitypackage binary
+
+# Unity specific assets
+*-[Nn]av[Mm]esh.asset binary
+*-[Tt]errain.asset binary
+*LightingData.asset binary
+*OcclusionCullingData.asset binary

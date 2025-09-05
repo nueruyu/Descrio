@@ -1,11 +1,8 @@
-
 # Descrio
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Descrio** is a simple, YAML/JSON-based scripting interpreter designed to be embedded in Unity projects.
-
-It allows you to write and dynamically execute logic for event sequences, NPC dialogues, quest progression, and more using human-readable YAML files, without needing to recompile C# code.
+**Descrio** is a simple, YAML-based scripting interpreter designed to be embedded in Unity projects. It allows you to write and dynamically execute logic for event sequences, NPC dialogues, quest progression, and more using human-readable YAML files, without needing to recompile C# code.
 
 ### Why use Descrio?
 
@@ -20,24 +17,24 @@ It allows you to write and dynamically execute logic for event sequences, NPC di
 *   **C# Interoperability**: Expose C# methods to your scripts with the `[Callable]` attribute.
 *   **Variables and Scopes**: Define immutable (`!let`) and mutable (`!var`) variables.
 *   **Control Flow**: Full support for conditional branches (`!when`, `!match`) and loops (`!for`, `!while`).
-*   **Functions**: Define and call functions within your scripts (`!function`).
+*   **Functions**: Define and call named or anonymous functions within your scripts (`!function`, `!lambda`).
 *   **Async Support**: Call asynchronous C# methods (`!dispatch`) and await them with `!run all` / `!run any`.
 *   **Exception Handling**: Safe error handling with `!try`, `!catch`, `!finally`, and `!throw`.
 *   **Module System**: Split and reuse scripts using the `imports` keyword.
 *   **Expression Evaluation**: Evaluate mathematical, comparison, and logical operations within an `!expr` tag (e.g., `health > 50`, `name == 'hero'`).
 
-## Quick Start
-
-### 1. Installation
+## Installation
 
 1.  In the Unity Editor, open the Package Manager window (`Window > Package Manager`).
 2.  Click the `+` button and select `Add package from git URL...`.
 3.  Enter the following URL and click Add:
    ```
-   https://github.com/nueruyu/Descrio.git?path=Packages/com.nueruyu.descrio
+   https://github.com/nueruyu/Descrio.git?path=Descrio.Unity/Packages/com.nueruyu.descrio
    ```
 
-### 2. Create a YAML Script
+## Quick Start
+
+### 1. Create a YAML Script
 Create a YAML file, such as `MyDialogue.yaml`, in your project assets.
 
 **`MyDialogue.yaml`:**
@@ -77,10 +74,10 @@ statements:
       - !run
         name: ShowMessage
         args:
-          text: "......"
+          text: "I don't understand. Let's talk later."
 ```
 
-### 3. Run the Script from C#
+### 2. Run the Script from C#
 Create a C# class to execute the script.
 
 **`DialogueManager.cs`:**
@@ -161,21 +158,58 @@ Descrio uses custom YAML tags to represent commands.
 
 | Tag | Description | Example |
 | :--- | :--- | :--- |
-| `!let` | Defines an immutable variable. | `!let { name: health, value: 100 }` |
-| `!var` | Defines a mutable variable. | `!var { name: score, value: 0 }` |
+| **Variables** | | |
+| `!let` | Defines an immutable (read-only) variable. | `!let { name: health, value: 100 }` |
+| `!var` | Defines a mutable (changeable) variable. | `!var { name: score, value: 0 }` |
 | `!assign`| Reassigns a new value to a mutable variable. | `!assign { name: score, value: !expr score + 10 }` |
-| `!run` | Executes a function synchronously and waits for the result. | `!run { name: Func, args: { key: val } }` |
-| `!dispatch` | Calls an asynchronous C# function. Immediately returns a Task. | `!dispatch { name: AsyncFunc }` |
-| `!when` | Builds a conditional branch (`if-elseif-else`). | See Quick Start example. |
-| `!match` | Builds a branch based on value equality (`switch-case`). | See Quick Start example. |
-| `!for` | Iterates over a list or an array. | `!for { in: !expr items, as: item, statements: [...] }` |
-| `!while` | Continues a loop as long as a condition is true. | `!while { condition: !expr IsActive, statements: [...] }`|
+| **Functions & Control Flow** | | |
+| `!run` | Executes a function and waits for its result. | `!run { name: MyFunc, args: { key: val } }` |
+| `!dispatch` | Calls an asynchronous C# function without waiting. Immediately returns a Task object. | `!dispatch { name: AsyncFunc }` |
+| `!function` | Defines a named, reusable function within the script. | `!function { name: Add, parameters: [...], statements: [...] }` |
+| `!lambda` | Defines an anonymous function. Can be assigned to a variable or passed as an argument. | `!let myLambda: !lambda { parameters: [...], statements: [...] }` |
 | `!return`| Returns a value from a function. | `!return { value: 42 }` |
-| `!break` | Breaks out of a loop. | `!break` |
-| `!continue`| Skips to the next iteration of a loop. | `!continue` |
-| `!try` | Defines an exception handling block. | `!try { statements: [...], catch: [...], finally: [...] }` |
-| `!throw` | Throws an exception. | `!throw { name: InvalidOperationError, args: { ... } }` |
-| `!expr` | Evaluates a string as an expression. | `!expr "score > 100 && is_clear == false"` |
+| **Conditional Logic** | | |
+| `!when` | Builds a conditional branch (`if-elseif-else`). | `!when { cases: [ { condition: !expr x > 10, then: [...] }, { then: [...] } ] }` |
+| `!match` | Builds a branch based on value equality (`switch-case`). | `!match { value: !expr choice, cases: [ { case: 0, then: [...] } ], default: [...] }` |
+| **Loops** | | |
+| `!for` | Iterates over a list or an array. | `!for { in: !expr items, as: item, statements: [...] }` |
+| `!while` | Loops as long as a condition is true. | `!while { condition: !expr IsActive, statements: [...] }`|
+| `!break` | Immediately exits a `!for` or `!while` loop. | `!break` |
+| `!continue`| Skips the rest of the current iteration and proceeds to the next one in a loop. | `!continue` |
+| **Error Handling & Debugging** | | |
+| `!try` | Defines a block for exception handling with `catch` and `finally` clauses. | `!try { statements: [...], catch: [...], finally: [...] }` |
+| `!throw` | Throws a script-level exception. | `!throw { name: InvalidOperationError, args: { message: '...' } }` |
+| `!assert` | Asserts that a condition is true. Throws an exception if it is false. | `!assert { condition: !expr score >= 0, message: 'Score cannot be negative.' }` |
+| **Expressions** | | |
+| `!expr` | Marks a string to be parsed and evaluated as an expression. | `!expr "score > 100 && is_clear == false"` |
+
+
+## For Contributors & Development Setup
+
+This project has been structured to separate the core, platform-agnostic logic from the Unity-specific environment. If you wish to contribute, please familiarize yourself with the following structure and workflow.
+
+### Project Structure
+```
+/
+├── src/
+│   ├── Descrio.Core/        # The core .NET Standard library (interpreter, parser, etc.)
+│   └── Descrio.Generator/   # The source generator for the [Callable] attribute.
+├── tests/
+│   └── Descrio.Core.Tests/  # NUnit tests for the core library.
+└── Descrio.Unity/
+    ├── Packages/
+    │   └── com.nueruyu.descrio/ # The UPM package source (consumes DLLs from Descrio.Core).
+    └── ...                  # The Unity project for samples and integration testing.
+```
+
+### Development Workflow
+
+1.  **Clone the repository.**
+2.  **Build the Core Library:** Open a terminal at the repository root and run `dotnet build`.
+    *   This compiles the `Descrio.Core` project.
+    *   A post-build step will automatically copy the necessary DLLs (`Descrio.Core.dll` and `YamlDotNet.dll`) into the `Descrio.Unity/Packages/com.nueruyu.descrio/Runtime/` directory.
+3.  **Open in Unity:** Open the `Descrio.Unity` folder as a project in Unity Hub. Any changes you make to the core library will be reflected in this project after you rebuild.
+4.  **Run Tests:** To run the fast, non-Unity tests, use `dotnet test` from the root directory.
 
 ## License
 
