@@ -70,6 +70,11 @@ statements:
             name: ShowMessage
             args:
               text: "Farewell."
+    default:
+      - !run
+        name: ShowMessage
+        args:
+          text: "I don't understand. Let's talk later."
 ```
 
 ### 2. Run the Script from C#
