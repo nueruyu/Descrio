@@ -15,6 +15,8 @@ namespace Descrio.Parse.Expressions
         private readonly List<Token> _tokens = new List<Token>();
         private int _start = 0;
         private int _current = 0;
+        private int _line = 1;
+        private int _startOfLineOffset = 0;
 
         // A static dictionary to map keyword strings to their token types.
         private static readonly Dictionary<string, TokenType> keywords = new Dictionary<string, TokenType>
@@ -41,7 +43,8 @@ namespace Descrio.Parse.Expressions
                 ScanToken();
             }
 
-            _tokens.Add(new Token(EOF, "", null, _source.Length));
+            int eofColumn = _current - _startOfLineOffset + 1;
+            _tokens.Add(new Token(EOF, "", null, _source.Length, _line, eofColumn, eofColumn - 1));
             return _tokens;
         }
 
@@ -108,8 +111,12 @@ namespace Descrio.Parse.Expressions
                 case ' ':
                 case '\r':
                 case '\t':
-                case '\n':
                     // Ignore whitespace.
+                    break;
+
+                case '\n':
+                    _line++;
+                    _startOfLineOffset = _current;
                     break;
 
                 // String literals
@@ -179,11 +186,18 @@ namespace Descrio.Parse.Expressions
             {
                 char c = Advance();
 
+                // Track line breaks inside the string.
+                if (c == '\n')
+                {
+                    _line++;
+                    _startOfLineOffset = _current;
+                }
+
                 // Handle escape character
                 if (c == '\\')
                 {
                     if (IsAtEnd())
-                        break; // Avoid index out of bounds on trailing backslash
+                        break;
 
                     char escaped = Advance();
                     switch (escaped)
@@ -202,14 +216,15 @@ namespace Descrio.Parse.Expressions
 
                         case 'n':
                             valueBuilder.Append('\n');
+                            // Also track this as a line break for location purposes.
+                            _line++;
+                            _startOfLineOffset = _current;
                             break;
 
                         case 't':
                             valueBuilder.Append('\t');
                             break;
-                        // For any other character, just append the backslash and the character itself.
-                        // This is a common behavior. e.g., "\c" becomes "c" or "\c".
-                        // Let's just append the escaped character for simplicity.
+
                         default:
                             valueBuilder.Append(escaped);
                             break;
@@ -226,13 +241,10 @@ namespace Descrio.Parse.Expressions
                 throw new FormatException($"Unterminated string starting at position {_start}.");
             }
 
-            // Consume the closing quote.
-            Advance();
+            Advance(); // Consume the closing quote.
 
             AddToken(STRING, valueBuilder.ToString());
         }
-
-        // --- Helper Methods ---
 
         private bool Match(char expected)
         {
@@ -262,7 +274,15 @@ namespace Descrio.Parse.Expressions
         private void AddToken(TokenType type, object literal)
         {
             string text = _source.Substring(_start, _current - _start);
-            _tokens.Add(new Token(type, text, literal, _start));
+            int startColumn = _start - _startOfLineOffset + 1;
+
+            // For multiline strings, the line number might have changed.
+            // But the token itself is considered to start at the line where it began.
+            // Correctly calculating the end line/column for multiline tokens is complex.
+            // We will stick to the simpler single-line calculation for now.
+            int endColumn = startColumn + text.Length - 1;
+
+            _tokens.Add(new Token(type, text, literal, _start, _line, startColumn, endColumn));
         }
     }
 }

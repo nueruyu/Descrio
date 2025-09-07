@@ -9,11 +9,13 @@ namespace Descrio
     {
         public string Name { get; }
         public IExpression ValueExpression { get; }
+        public SourceRange Location { get; }
 
-        public LetStatement(string name, IExpression valueExpression)
+        public LetStatement(string name, IExpression valueExpression, SourceRange location = null)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             ValueExpression = valueExpression ?? throw new ArgumentNullException(nameof(valueExpression));
+            Location = location;
         }
     }
 }

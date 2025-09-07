@@ -45,23 +45,43 @@ namespace Descrio.Parse.Expressions
             _tokens = tokenizer.ScanTokens();
 
             // Register Prefix parselets, which handle tokens that appear at the start of an expression.
-            Register(IDENTIFIER, () => new VariableExpression(Previous().Lexeme));
-            Register(NUMBER, () => new LiteralExpression(Previous().Literal));
-            Register(TRUE, () => new LiteralExpression(true));
-            Register(FALSE, () => new LiteralExpression(false));
-            Register(NULL, () => new LiteralExpression(null));
-            Register(STRING, () => ParseInterpolatedString((string)Previous().Literal));
+            Register(IDENTIFIER, () => new VariableExpression(Previous().Lexeme, Previous().Location));
+            Register(NUMBER, () => new LiteralExpression(Previous().Literal, Previous().Location));
+            Register(TRUE, () => new LiteralExpression(true, Previous().Location));
+            Register(FALSE, () => new LiteralExpression(false, Previous().Location));
+            Register(NULL, () => new LiteralExpression(null, Previous().Location));
+            Register(STRING, () => ParseInterpolatedString((string)Previous().Literal, Previous().Location));
 
             // Unary operators are also prefix.
-            Register(BANG, () => new UnaryExpression(OperatorType.Not, ParsePrecedence(Precedence.UNARY)));
-            Register(MINUS, () => new UnaryExpression(OperatorType.Subtract, ParsePrecedence(Precedence.UNARY)));
+            Register(BANG, () =>
+            {
+                var operatorToken = Previous();
+                var operand = ParsePrecedence(Precedence.UNARY);
+                var location = new SourceRange(operatorToken.Location.StartLine, operatorToken.Location.StartColumn, operand.Location.EndLine, operand.Location.EndColumn);
+                return new UnaryExpression(OperatorType.Not, operand, location);
+            });
+            Register(MINUS, () =>
+            {
+                var operatorToken = Previous();
+                var operand = ParsePrecedence(Precedence.UNARY);
+                var location = new SourceRange(operatorToken.Location.StartLine, operatorToken.Location.StartColumn, operand.Location.EndLine, operand.Location.EndColumn);
+                return new UnaryExpression(OperatorType.Subtract, operand, location);
+            });
 
             // Grouping with parentheses.
             Register(LEFT_PAREN, () =>
             {
+                var leftParenToken = Previous();
                 var expr = ParsePrecedence(Precedence.NONE);
-                Consume(RIGHT_PAREN, "Expect ')' after expression.");
-                return expr;
+                var rightParenToken = Consume(RIGHT_PAREN, "Expect ')' after expression.");
+
+                var location = new SourceRange(
+                    leftParenToken.Location.StartLine,
+                    leftParenToken.Location.StartColumn,
+                    rightParenToken.Location.EndLine,
+                    rightParenToken.Location.EndColumn);
+
+                return new GroupingExpression(expr, location);
             });
 
             // Register Infix parselets, which handle tokens that appear between two operands.
@@ -78,8 +98,9 @@ namespace Descrio.Parse.Expressions
 
             RegisterInfix(DOT, Precedence.CALL, (left) =>
             {
-                var member = Consume(IDENTIFIER, "Expect property name after '.'.");
-                return new MemberAccessExpression(left, member.Lexeme);
+                var memberToken = Consume(IDENTIFIER, "Expect property name after '.'.");
+                var location = new SourceRange(left.Location.StartLine, left.Location.StartColumn, memberToken.Location.EndLine, memberToken.Location.EndColumn);
+                return new MemberAccessExpression(left, memberToken.Lexeme, location);
             });
         }
 
@@ -88,10 +109,9 @@ namespace Descrio.Parse.Expressions
         /// </summary>
         public IExpression Parse()
         {
-            // Handle empty input gracefully.
-            if (Current().Type == EOF)
+            if (_tokens.Count == 0 || Current().Type == EOF)
             {
-                return new LiteralExpression(null);
+                return new LiteralExpression(null, SourceRange.Unknown);
             }
 
             var expression = ParsePrecedence(Precedence.NONE);
@@ -151,7 +171,12 @@ namespace Descrio.Parse.Expressions
 
         private void RegisterInfix(TokenType type, OperatorType opType, Precedence precedence)
         {
-            RegisterInfix(type, precedence, (left) => new BinaryExpression(left, ParsePrecedence(precedence), opType));
+            RegisterInfix(type, precedence, (left) =>
+            {
+                var right = ParsePrecedence(precedence);
+                var location = new SourceRange(left.Location.StartLine, left.Location.StartColumn, right.Location.EndLine, right.Location.EndColumn);
+                return new BinaryExpression(left, right, opType, location);
+            });
         }
 
         private Precedence GetPrecedence(TokenType type)
@@ -159,7 +184,7 @@ namespace Descrio.Parse.Expressions
             return _precedences.GetValueOrDefault(type, Precedence.NONE);
         }
 
-        private IExpression ParseInterpolatedString(string stringValue)
+        private IExpression ParseInterpolatedString(string stringValue, SourceRange location)
         {
             var parts = new List<IExpression>();
             var lastIndex = 0;
@@ -170,7 +195,7 @@ namespace Descrio.Parse.Expressions
                 // Add the literal part before the interpolation.
                 if (currentIndex > lastIndex)
                 {
-                    parts.Add(new LiteralExpression(stringValue.Substring(lastIndex, currentIndex - lastIndex)));
+                    parts.Add(new LiteralExpression(stringValue.Substring(lastIndex, currentIndex - lastIndex), SourceRange.Unknown));
                 }
 
                 var expressionStart = currentIndex + 2;
@@ -203,17 +228,17 @@ namespace Descrio.Parse.Expressions
             // Add the final literal part after the last interpolation.
             if (lastIndex < stringValue.Length)
             {
-                parts.Add(new LiteralExpression(stringValue.Substring(lastIndex)));
+                parts.Add(new LiteralExpression(stringValue.Substring(lastIndex), SourceRange.Unknown));
             }
 
             if (parts.Count == 0)
-                return new LiteralExpression(stringValue); // No interpolation was found.
+                return new LiteralExpression(stringValue, location); // No interpolation was found.
 
             // If the string consists of a single literal part, return it directly.
             if (parts.Count == 1 && parts[0] is LiteralExpression literal)
-                return literal;
+                return new LiteralExpression(literal.Value, location);
 
-            return new InterpolatedStringExpression(parts);
+            return new InterpolatedStringExpression(parts, location);
         }
 
         // --- Token Stream Navigation Helpers ---

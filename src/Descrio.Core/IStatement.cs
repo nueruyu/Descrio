@@ -1,9 +1,6 @@
-using Descrio.Execution;
-using System.Threading.Tasks;
-
 namespace Descrio
 {
-    public interface IStatement
+    public interface IStatement : IAstNode
     {
     }
 }

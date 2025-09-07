@@ -9,11 +9,13 @@ namespace Descrio
     {
         public string Name { get; }
         public IReadOnlyDictionary<string, IExpression> ArgExpressions { get; }
+        public SourceRange Location { get; }
 
-        public DispatchStatement(string name, IReadOnlyDictionary<string, IExpression> argExpressions)
+        public DispatchStatement(string name, IReadOnlyDictionary<string, IExpression> argExpressions, SourceRange location = null)
         {
             Name = name;
             ArgExpressions = argExpressions;
+            Location = location;
         }
     }
 }

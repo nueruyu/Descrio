@@ -71,6 +71,8 @@ namespace Descrio.Execution
                 LambdaExpression e => ExecuteAsync(e),
                 DispatchStatement e => ExecuteAsync(e),
                 RunStatement e => ExecuteAsync(e),
+                GroupingExpression e => ExecuteAsync(e),
+                EmbeddedExpression e => ExecuteAsync(e),
                 _ => throw new NotImplementedException($"Execution for {expression.GetType().Name} is not implemented.")
             };
         }
@@ -668,6 +670,18 @@ namespace Descrio.Execution
             }
 
             return VisitResult.Normal;
+        }
+
+        private ValueTask<VisitResult> ExecuteAsync(GroupingExpression expression)
+        {
+            // Executing a grouping is the same as executing its inner expression.
+            // The parentheses only affect parsing precedence, not evaluation logic.
+            return ExecuteAsync(expression.Expression);
+        }
+
+        private ValueTask<VisitResult> ExecuteAsync(EmbeddedExpression expression)
+        {
+            return ExecuteAsync(expression.InnerExpression);
         }
 
         private static bool IsTruthy(object value)

@@ -7,11 +7,13 @@ namespace Descrio
     {
         public IExpression Target { get; }
         public IExpression ValueExpression { get; }
+        public SourceRange Location { get; }
 
-        public AssignStatement(IExpression target, IExpression valueExpression)
+        public AssignStatement(IExpression target, IExpression valueExpression, SourceRange location = null)
         {
             Target = target;
             ValueExpression = valueExpression;
+            Location = location;
         }
     }
 }

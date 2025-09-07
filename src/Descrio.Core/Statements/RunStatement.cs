@@ -10,11 +10,13 @@ namespace Descrio
     {
         public string Name { get; }
         public IReadOnlyDictionary<string, IExpression> ArgExpressions { get; }
+        public SourceRange Location { get; }
 
-        public RunStatement(string name, IReadOnlyDictionary<string, IExpression> argExpressions)
+        public RunStatement(string name, IReadOnlyDictionary<string, IExpression> argExpressions, SourceRange location = null)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             ArgExpressions = argExpressions ?? throw new ArgumentNullException(nameof(argExpressions));
+            Location = location;
         }
     }
 }

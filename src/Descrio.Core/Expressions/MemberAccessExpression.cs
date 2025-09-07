@@ -10,11 +10,13 @@ namespace Descrio
     {
         public IExpression ObjectExpression { get; }
         public string MemberName { get; }
+        public SourceRange Location { get; }
 
-        public MemberAccessExpression(IExpression objectExpression, string memberName)
+        public MemberAccessExpression(IExpression objectExpression, string memberName, SourceRange location = null)
         {
             ObjectExpression = objectExpression;
             MemberName = memberName;
+            Location = location;
         }
     }
 }

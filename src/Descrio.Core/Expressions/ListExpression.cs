@@ -8,10 +8,12 @@ namespace Descrio
     public class ListExpression : IExpression
     {
         public IReadOnlyList<IExpression> Elements { get; }
+        public SourceRange Location { get; }
 
-        public ListExpression(IReadOnlyList<IExpression> elements)
+        public ListExpression(IReadOnlyList<IExpression> elements, SourceRange location = null)
         {
             Elements = elements ?? new List<IExpression>();
+            Location = location;
         }
     }
 }

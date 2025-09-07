@@ -7,8 +7,13 @@ namespace Descrio
     {
         private readonly string _variableName;
 
-        public VariableExpression(string variableName) => _variableName = variableName;
+        public VariableExpression(string variableName, SourceRange location = null)
+        {
+            _variableName = variableName;
+            Location = location;
+        }
 
         public string VariableName => _variableName;
+        public SourceRange Location { get; }
     }
 }

@@ -10,11 +10,13 @@ namespace Descrio
     {
         public IExpression Condition { get; }
         public string Message { get; }
+        public SourceRange Location { get; }
 
-        public AssertStatement(IExpression condition, string message)
+        public AssertStatement(IExpression condition, string message, SourceRange location = null)
         {
             Condition = condition;
             Message = message;
+            Location = location;
         }
     }
 }

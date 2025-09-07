@@ -7,11 +7,13 @@ namespace Descrio
     {
         public IExpression Condition { get; }
         public IStatement[] Statements { get; }
+        public SourceRange Location { get; }
 
-        public WhileStatement(IExpression condition, IStatement[] statements)
+        public WhileStatement(IExpression condition, IStatement[] statements, SourceRange location = null)
         {
             Condition = condition;
             Statements = statements;
+            Location = location;
         }
     }
 }

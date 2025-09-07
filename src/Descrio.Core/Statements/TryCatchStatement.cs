@@ -7,17 +7,19 @@ namespace Descrio
     /// <summary>
     /// Represents a single 'catch' block within a 'try-catch' statement.
     /// </summary>
-    public class CatchClause
+    public class CatchClause : ISyntaxNode
     {
         public string ErrorName { get; }
         public string VariableName { get; }
         public IStatement[] ThenBlock { get; }
+        public SourceRange Location { get; }
 
-        public CatchClause(string errorName, string variableName, IStatement[] thenBlock)
+        public CatchClause(string errorName, string variableName, IStatement[] thenBlock, SourceRange location = null)
         {
             ErrorName = errorName; // Can be null for a default catch-all
             VariableName = variableName;
             ThenBlock = thenBlock;
+            Location = location;
         }
     }
 
@@ -29,12 +31,14 @@ namespace Descrio
         public IStatement[] TryBlock { get; }
         public IReadOnlyList<CatchClause> CatchClauses { get; }
         public IStatement[] FinallyBlock { get; }
+        public SourceRange Location { get; }
 
-        public TryCatchStatement(IStatement[] tryBlock, IReadOnlyList<CatchClause> catchClauses, IStatement[] finallyBlock)
+        public TryCatchStatement(IStatement[] tryBlock, IReadOnlyList<CatchClause> catchClauses, IStatement[] finallyBlock, SourceRange location = null)
         {
             TryBlock = tryBlock;
             CatchClauses = catchClauses;
             FinallyBlock = finallyBlock;
+            Location = location;
         }
     }
 }

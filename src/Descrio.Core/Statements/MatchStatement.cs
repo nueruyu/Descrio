@@ -7,15 +7,17 @@ namespace Descrio
     /// <summary>
     /// Represents a block of instructions for a single case in a !match statement.
     /// </summary>
-    public class MatchCaseBlock
+    public class MatchCaseBlock : ISyntaxNode
     {
         public object CaseValue { get; }
         public IStatement[] ThenBlock { get; }
+        public SourceRange Location { get; }
 
-        public MatchCaseBlock(object caseValue, IStatement[] thenBlock)
+        public MatchCaseBlock(object caseValue, IStatement[] thenBlock, SourceRange location = null)
         {
             CaseValue = caseValue;
             ThenBlock = thenBlock;
+            Location = location;
         }
     }
 
@@ -27,12 +29,14 @@ namespace Descrio
         public IExpression ValueExpression { get; }
         public IReadOnlyList<MatchCaseBlock> Cases { get; }
         public IStatement[] DefaultBlock { get; }
+        public SourceRange Location { get; }
 
-        public MatchStatement(IExpression valueExpression, IReadOnlyList<MatchCaseBlock> cases, IStatement[] defaultBlock)
+        public MatchStatement(IExpression valueExpression, IReadOnlyList<MatchCaseBlock> cases, IStatement[] defaultBlock, SourceRange location = null)
         {
             ValueExpression = valueExpression;
             Cases = cases;
             DefaultBlock = defaultBlock;
+            Location = location;
         }
     }
 }

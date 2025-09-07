@@ -10,11 +10,13 @@ namespace Descrio
     {
         public OperatorType OperatorType { get; }
         public IExpression Operand { get; }
+        public SourceRange Location { get; }
 
-        public UnaryExpression(OperatorType operatorType, IExpression operand)
+        public UnaryExpression(OperatorType operatorType, IExpression operand, SourceRange location = null)
         {
             OperatorType = operatorType;
             Operand = operand;
+            Location = location;
         }
     }
 }

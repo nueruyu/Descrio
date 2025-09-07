@@ -7,8 +7,13 @@ namespace Descrio
     {
         private readonly object _value;
 
-        public LiteralExpression(object value) => _value = value;
+        public LiteralExpression(object value, SourceRange location = null)
+        {
+            _value = value;
+            Location = location;
+        }
 
         public object Value => _value;
+        public SourceRange Location { get; }
     }
 }

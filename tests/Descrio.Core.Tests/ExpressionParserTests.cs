@@ -200,5 +200,95 @@ namespace Descrio.EditorTests
             var ex = Assert.Throws<FormatException>(() => new ExpressionParser(source).Parse());
             StringAssert.Contains(expectedMessageFragment, ex.Message);
         }
+
+        #region Location Tests
+
+        /// <summary>
+        /// A helper method that only parses the source text into an AST node
+        /// without executing it, allowing for inspection of the node's properties.
+        /// </summary>
+        private IExpression ParseOnly(string source)
+        {
+            var parser = new ExpressionParser(source);
+            return parser.Parse();
+        }
+
+        [Test]
+        [TestCase("123", 1, 1, 1, 3)]
+        [TestCase("  true", 1, 3, 1, 6)]
+        [TestCase("id", 1, 1, 1, 2)]
+        public void Location_SingleTokenExpression_ShouldHaveCorrectLocation(string source, int startLine, int startCol, int endLine, int endCol)
+        {
+            var expr = ParseOnly(source);
+            var expected = new SourceRange(startLine, startCol, endLine, endCol);
+            Assert.AreEqual(expected, expr.Location);
+        }
+
+        [Test]
+        [TestCase("!t", 1, 1, 1, 2)]
+        [TestCase("-x", 1, 1, 1, 2)]
+        [TestCase(" -  y", 1, 2, 1, 5)]
+        public void Location_UnaryExpression_ShouldSpanFromOperatorToEndOfOperand(string source, int startLine, int startCol, int endLine, int endCol)
+        {
+            var expr = ParseOnly(source);
+            var expected = new SourceRange(startLine, startCol, endLine, endCol);
+            Assert.AreEqual(expected, expr.Location);
+        }
+
+        [Test]
+        [TestCase("1 + 2", 1, 1, 1, 5)]
+        [TestCase("x==y", 1, 1, 1, 4)]
+        [TestCase(" s  /  'foo' ", 1, 2, 1, 12)]
+        public void Location_BinaryExpression_ShouldSpanFromStartOfLeftToEndOfRight(string source, int startLine, int startCol, int endLine, int endCol)
+        {
+            var expr = ParseOnly(source);
+            var expected = new SourceRange(startLine, startCol, endLine, endCol);
+            Assert.AreEqual(expected, expr.Location);
+        }
+
+        [Test]
+        public void Location_MemberAccessExpression_ShouldSpanFromObjectToEndOfMember()
+        {
+            var expr = ParseOnly("x.y.z");
+            var expected = new SourceRange(1, 1, 1, 5);
+            Assert.AreEqual(expected, expr.Location);
+        }
+
+        [Test]
+        public void Location_MultiLineExpression_ShouldHaveCorrectLineNumbers()
+        {
+            var source = @"
+x +
+  y
+";
+            var expr = ParseOnly(source);
+            // "x" is on line 2, "y" is on line 3
+            var expected = new SourceRange(2, 1, 3, 3);
+            Assert.AreEqual(expected, expr.Location);
+        }
+
+        [Test]
+        public void Location_ParenthesizedExpression_ShouldCreateGroupingNodeWithCorrectLocation()
+        {
+            var expr = ParseOnly(" ( 1 + 2 ) ");
+
+            // 1. Assert that the outer node is a GroupingExpression.
+            Assert.IsInstanceOf<GroupingExpression>(expr);
+            var groupingExpr = (GroupingExpression)expr;
+
+            // 2. Assert that the GroupingExpression's location covers the parentheses.
+            // "(" is at col 2. ")" is at col 11.
+            var expectedOuterLocation = new SourceRange(1, 2, 1, 10);
+            Assert.AreEqual(expectedOuterLocation, groupingExpr.Location);
+
+            // 3. (Optional but recommended) Assert that the inner expression and its location are also correct.
+            var innerExpr = groupingExpr.Expression;
+            Assert.IsInstanceOf<BinaryExpression>(innerExpr);
+            // "1" is at col 4. "2" is at col 8, ends at 8.
+            var expectedInnerLocation = new SourceRange(1, 4, 1, 8);
+            Assert.AreEqual(expectedInnerLocation, innerExpr.Location);
+        }
+
+        #endregion Location Tests
     }
 }

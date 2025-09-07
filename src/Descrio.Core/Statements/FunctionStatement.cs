@@ -10,12 +10,14 @@ namespace Descrio
         public string Name { get; }
         public ParameterDefinition[] Parameters { get; }
         public IStatement[] Statements { get; }
+        public SourceRange Location { get; }
 
-        public FunctionStatement(string name, ParameterDefinition[] parameters, IStatement[] statements)
+        public FunctionStatement(string name, ParameterDefinition[] parameters, IStatement[] statements, SourceRange location = null)
         {
             Name = name ?? throw new ArgumentNullException(nameof(name));
             Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
             Statements = statements ?? throw new ArgumentNullException(nameof(statements));
+            Location = location;
         }
     }
 }
