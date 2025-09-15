@@ -3,6 +3,9 @@ using System; // For Convert
 using System.Threading.Tasks;
 using static Descrio.EditorTests.TestStatementFactory;
 using static Descrio.EditorTests.TestExpressionFactory;
+using Descrio.Abstractions;
+using Descrio.Syntax;
+using Descrio.Syntax.Expressions;
 
 namespace Descrio.EditorTests.StatementExecutionTests
 {

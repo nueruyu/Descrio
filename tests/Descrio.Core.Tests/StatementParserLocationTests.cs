@@ -1,8 +1,10 @@
 using NUnit.Framework;
-using Descrio.Parse;
-using Descrio.Parse.Yaml;
-using Descrio.Syntax;
+using Descrio.Parsing;
+using Descrio.Parsing.Yaml;
+using Descrio.Data;
 using System.Linq;
+using Descrio.Syntax.Expressions;
+using Descrio.Syntax.Statements;
 
 namespace Descrio.EditorTests
 {

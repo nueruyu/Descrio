@@ -1,3 +1,4 @@
+using Descrio.Abstractions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,7 +7,13 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using Descrio.Execution.Callables;
 using System.Threading.Tasks;
+using Descrio.Syntax;
+using Module = Descrio.Syntax.Module;
+using Descrio.Syntax.Expressions;
+using Descrio.Syntax.Statements;
+using Descrio.Data;
 
 namespace Descrio.Execution
 {

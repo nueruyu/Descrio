@@ -1,8 +1,8 @@
 using NUnit.Framework;
-using Descrio.Parse.Expressions;
+using Descrio.Parsing.Expressions;
 using System.Collections.Generic;
 using System.Linq;
-using static Descrio.Parse.Expressions.TokenType;
+using static Descrio.Parsing.Expressions.TokenType;
 using System;
 
 namespace Descrio.EditorTests

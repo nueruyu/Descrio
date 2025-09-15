@@ -1,6 +1,7 @@
 using NUnit.Framework;
-using Descrio.Parse;
+using Descrio.Parsing;
 using System.Linq;
+using Descrio.Abstractions;
 
 namespace Descrio.EditorTests
 {

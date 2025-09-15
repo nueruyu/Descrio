@@ -1,3 +1,5 @@
+using Descrio.Abstractions;
+using Descrio.Syntax.Expressions;
 using System.Collections.Generic;
 
 namespace Descrio.EditorTests.Builders

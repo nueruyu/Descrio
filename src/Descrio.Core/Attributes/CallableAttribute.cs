@@ -1,6 +1,6 @@
 using System;
 
-namespace Descrio
+namespace Descrio.Attributes
 {
     /// <summary>
     /// Marks a method to be exposed as a callable function from within a Descrio script.

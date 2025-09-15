@@ -1,4 +1,7 @@
+using Descrio.Abstractions;
 using Descrio.EditorTests.Builders;
+using Descrio.Syntax;
+using Descrio.Syntax.Expressions;
 using System;
 using System.Collections.Generic;
 using System.Linq;

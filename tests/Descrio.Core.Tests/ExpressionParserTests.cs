@@ -1,9 +1,13 @@
 using NUnit.Framework;
 using Descrio.Execution;
-using Descrio.Parse.Expressions;
+using Descrio.Execution.Registries;
+using Descrio.Parsing.Expressions;
+using Descrio.Data;
 using System.Threading.Tasks;
 using System;
 using ExecutionContext = Descrio.Execution.ExecutionContext;
+using Descrio.Abstractions;
+using Descrio.Syntax.Expressions;
 
 namespace Descrio.EditorTests
 {
