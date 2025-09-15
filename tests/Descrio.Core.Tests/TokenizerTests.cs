@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using static Descrio.Parsing.Expressions.TokenType;
 using System;
+using Descrio.Data;
 
 namespace Descrio.EditorTests
 {
@@ -136,6 +137,62 @@ namespace Descrio.EditorTests
             Assert.AreEqual(1, tokens.Count);
             Assert.AreEqual(STRING, tokens[0].Type);
             Assert.AreEqual("Line1\nLine2\tTabbed", tokens[0].Literal);
+        }
+
+        [Test]
+        public void Scan_LocationOfSingleLineToken_ShouldBeCorrect()
+        {
+            var source = "  'hello'"; // Starts at column 3, ends at column 9
+            var tokens = Scan(source);
+
+            Assert.AreEqual(1, tokens.Count);
+            var token = tokens[0];
+            var expected = new SourceRange(1, 3, 1, 9);
+            Assert.AreEqual(expected, token.Location);
+        }
+
+        [Test]
+        public void Scan_LocationOfMultiLineToken_ShouldHaveCorrectStartAndEndPositions()
+        {
+            // This string starts on line 2, column 5
+            // and ends on line 3, column 10
+            var source = @"
+    'line1
+         line2'";
+
+            var tokenizer = new Tokenizer(source);
+            var tokens = tokenizer.ScanTokens().Where(t => t.Type != EOF).ToList();
+
+            Assert.AreEqual(1, tokens.Count);
+            Assert.AreEqual(STRING, tokens[0].Type);
+
+            var token = tokens[0];
+            var expectedLocation = new SourceRange(
+                2, // Start Line
+                5, // Start Column
+                3, // End Line
+                15 // End Column (' ends at column 15 on the third line)
+            );
+
+            Assert.AreEqual(expectedLocation, token.Location, "The SourceRange for the multiline string is incorrect.");
+        }
+
+        [Test]
+        public void Scan_LocationOfTokensOnMultipleLines_ShouldBeCorrect()
+        {
+            var source = "first_token\n  second_token";
+            var tokens = Scan(source);
+
+            Assert.AreEqual(2, tokens.Count);
+
+            var first = tokens[0];
+            var second = tokens[1];
+
+            var expectedFirst = new SourceRange(1, 1, 1, 11);
+            var expectedSecond = new SourceRange(2, 3, 2, 14);
+
+            Assert.AreEqual(expectedFirst, first.Location, "Location of the first token is incorrect.");
+            Assert.AreEqual(expectedSecond, second.Location, "Location of the second token is incorrect.");
         }
     }
 }
