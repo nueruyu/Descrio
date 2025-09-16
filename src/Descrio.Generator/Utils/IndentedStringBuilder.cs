@@ -27,6 +27,10 @@ namespace Descrio.Generator.Utils
             _sb.AppendLine();
         }
 
+        public void IncreaseIndent() => _indent++;
+
+        public void DecreaseIndent() => _indent--;
+
         /// <summary>
         /// Appends an opening brace and increases the indentation level.
         /// Returns a disposable object that will decrease the indentation when disposed.
@@ -38,7 +42,7 @@ namespace Descrio.Generator.Utils
             return new IndentHandler(this);
         }
 
-        private void DecreaseIndent()
+        private void CloseIndentedBlock()
         {
             _indent--;
             AppendLine("}");
@@ -55,7 +59,7 @@ namespace Descrio.Generator.Utils
 
             public IndentHandler(IndentedStringBuilder builder) => _builder = builder;
 
-            public void Dispose() => _builder.DecreaseIndent();
+            public void Dispose() => _builder.CloseIndentedBlock();
         }
     }
 }

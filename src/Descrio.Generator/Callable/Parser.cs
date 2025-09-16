@@ -80,13 +80,70 @@ namespace Descrio.Generator.Callable
                         Name = p.Name,
                         Type = p.Type,
                         HasDefaultValue = p.HasExplicitDefaultValue,
-                        DefaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue : null
+                        DefaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue : null,
+                        MappableMembers = GetMappableMembers(p.Type)
                     }).ToList()
                 };
                 classInfo.Methods.Add(methodInfo);
             }
 
             return classInfos.Values.ToList();
+        }
+
+        /// <summary>
+        /// Analyzes a type and, if it is a mappable class, returns a list of its public members.
+        /// A type is considered mappable if it's a class with a public parameterless constructor.
+        /// </summary>
+        /// <param name="type">The type symbol to analyze.</param>
+        /// <returns>A list of mappable members, or null if the type is not a mappable class.</returns>
+        public static List<MappableMemberInfo> GetMappableMembers(ITypeSymbol type)
+        {
+            // Only non-special classes are candidates for mapping.
+            if (type == null || type.SpecialType != SpecialType.None || type.TypeKind != TypeKind.Class)
+            {
+                return null;
+            }
+
+            // The class must have a public parameterless constructor to be instantiated.
+            var hasDefaultConstructor = type.GetMembers()
+                .OfType<IMethodSymbol>()
+                .Any(m => m.MethodKind == MethodKind.Constructor && m.Parameters.Length == 0 && m.DeclaredAccessibility == Accessibility.Public);
+
+            if (!hasDefaultConstructor)
+            {
+                return null; // Cannot create an instance if no default constructor is found.
+            }
+
+            var members = new List<MappableMemberInfo>();
+
+            // Collect public properties with a public setter.
+            foreach (var prop in type.GetMembers().OfType<IPropertySymbol>())
+            {
+                if (prop.DeclaredAccessibility == Accessibility.Public && prop.SetMethod != null && prop.SetMethod.DeclaredAccessibility == Accessibility.Public)
+                {
+                    members.Add(new MappableMemberInfo
+                    {
+                        Name = prop.Name,
+                        TypeName = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+                    });
+                }
+            }
+
+            // Collect public, non-readonly fields.
+            foreach (var field in type.GetMembers().OfType<IFieldSymbol>())
+            {
+                if (field.DeclaredAccessibility == Accessibility.Public && !field.IsReadOnly)
+                {
+                    members.Add(new MappableMemberInfo
+                    {
+                        Name = field.Name,
+                        TypeName = field.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+                    });
+                }
+            }
+
+            // Return the list of members, or null if no mappable members were found.
+            return members.Any() ? members : null;
         }
 
         private static (bool IsAwaitable, bool ReturnsValue) AnalyzeReturnType(Compilation compilation, ITypeSymbol type)
