@@ -124,9 +124,10 @@ namespace Descrio.Parsing.Cst
         private static AssignStatement ToAssignStatement(CstNode cstNode)
         {
             var map = ExpectMapping(cstNode);
-            var name = GetRequiredScalar(map, "name");
+            var nameNode = GetRequiredNode(map, "name");
+            var name = ExpectScalar(nameNode, "The 'name' for an assignment").Value;
             var valueNode = GetRequiredNode(map, "value");
-            var target = new VariableExpression(name, cstNode.Location); // Assuming target is a simple variable
+            var target = new VariableExpression(name, nameNode.Location); // Assuming target is a simple variable
             return new AssignStatement(target, FromCstToExpression(valueNode), cstNode.Location);
         }
 
