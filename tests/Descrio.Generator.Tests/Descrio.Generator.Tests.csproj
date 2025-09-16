@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Descrio.Core\Descrio.Core.csproj" />
     <ProjectReference Include="..\..\src\Descrio.Generator\Descrio.Generator.csproj" />
   </ItemGroup>
 

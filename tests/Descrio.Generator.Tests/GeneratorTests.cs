@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis;
+using Descrio.Attributes;
 
 namespace Descrio.Generator.Tests
 {
@@ -9,38 +10,7 @@ namespace Descrio.Generator.Tests
         [Test]
         public Task SimpleMappableClass_GeneratesCorrectly()
         {
-            // 1. Input source code for the generator.
-            // Placeholders for Descrio types are still needed for the test compilation.
             const string inputSource = @"
-using Descrio;
-using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-
-namespace Descrio
-{
-    public class Arguments : Dictionary<string, object> {}
-    public interface ICallable { ValueTask<object?> CallAsync(Arguments args, Execution.ExecutionContext context); }
-    public class ScriptRunner { public ScriptRunner AddCallable(string name, ICallable callable) => this; }
-
-    namespace Execution
-    {
-        public class ExecutionContext {}
-        namespace Converters
-        {
-            public interface ITypeConverter { object? Convert(object? source); }
-            public static partial class TypeConverterRegistry
-            {
-                static partial void InitializeConverters();
-                internal static void RegisterCore(Type t, ITypeConverter c) {}
-            }
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method)]
-    public sealed class CallableAttribute : Attribute { public CallableAttribute(string? name = null) {} }
-}
-
 namespace MyGame.Data
 {
     public class EffectData
@@ -53,6 +23,7 @@ namespace MyGame.Data
 namespace MyGame.Actions
 {
     using MyGame.Data;
+    using Descrio.Attributes;
 
     public class GameActions
     {
@@ -61,9 +32,16 @@ namespace MyGame.Actions
     }
 }
 ";
+            //var callableType = typeof(Descrio.Attributes.CallableAttribute);
 
             var syntaxTree = CSharpSyntaxTree.ParseText(inputSource);
 
+            var referenceAssemblies = new[]
+            {
+                typeof(object).Assembly, // mscorlib
+                typeof(Enumerable).Assembly, // System.Linq
+                typeof(CallableAttribute).Assembly, // Descrio.Core
+            };
             var references = AppDomain.CurrentDomain.GetAssemblies()
                 .Where(assembly => !assembly.IsDynamic)
                 .Select(assembly => MetadataReference.CreateFromFile(assembly.Location))

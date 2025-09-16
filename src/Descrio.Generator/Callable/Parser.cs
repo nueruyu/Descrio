@@ -8,7 +8,7 @@ namespace Descrio.Generator.Callable
 {
     internal static class Parser
     {
-        private const string CallableAttributeName = "Descrio.CallableAttribute";
+        private const string CallableAttributeName = "Descrio.Attributes.CallableAttribute";
 
         public static List<CallableClassInfo> GetCallableClasses(GeneratorExecutionContext context, ISyntaxReceiver receiver)
         {
