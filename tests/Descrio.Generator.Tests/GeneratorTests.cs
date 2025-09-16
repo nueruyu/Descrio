@@ -1,6 +1,5 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis;
-using Descrio.Attributes;
 
 namespace Descrio.Generator.Tests
 {
@@ -32,18 +31,17 @@ namespace MyGame.Actions
     }
 }
 ";
-            //var callableType = typeof(Descrio.Attributes.CallableAttribute);
-
             var syntaxTree = CSharpSyntaxTree.ParseText(inputSource);
 
-            var referenceAssemblies = new[]
-            {
-                typeof(object).Assembly, // mscorlib
-                typeof(Enumerable).Assembly, // System.Linq
-                typeof(CallableAttribute).Assembly, // Descrio.Core
-            };
-            var references = AppDomain.CurrentDomain.GetAssemblies()
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies()
                 .Where(assembly => !assembly.IsDynamic)
+                .Concat(
+                [
+                    typeof(Descrio.Attributes.CallableAttribute).Assembly
+                ])
+                .Distinct();
+
+            var references = assemblies
                 .Select(assembly => MetadataReference.CreateFromFile(assembly.Location))
                 .ToList();
 
