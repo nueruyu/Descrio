@@ -34,7 +34,13 @@ namespace Descrio.Generator
                 foreach (var type in allMappableTypes)
                 {
                     var converterSource = ConverterBuilder.BuildTypeConverterClass(type, allMappableTypes);
-                    var safeName = type.ToDisplayString().Replace("global::", "").Replace(".", "_").Replace("<", "_").Replace(">", "_");
+                    var safeName = type.ToDisplayString()
+                        .Replace("global::", "")
+                        .Replace(".", "_")
+                        .Replace("<", "_")
+                        .Replace(">", "_")
+                        .Replace("?", "_");
+
                     context.AddSource($"__Descrio_{safeName}_Converter.g.cs", SourceText.From(converterSource, Encoding.UTF8));
                 }
 
