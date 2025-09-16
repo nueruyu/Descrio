@@ -124,11 +124,29 @@ namespace Descrio.Parsing.Cst
         private static AssignStatement ToAssignStatement(CstNode cstNode)
         {
             var map = ExpectMapping(cstNode);
-            var nameNode = GetRequiredNode(map, "name");
-            var name = ExpectScalar(nameNode, "The 'name' for an assignment").Value;
+            var targetNode = GetRequiredNode(map, "target");
             var valueNode = GetRequiredNode(map, "value");
-            var target = new VariableExpression(name, nameNode.Location); // Assuming target is a simple variable
-            return new AssignStatement(target, FromCstToExpression(valueNode), cstNode.Location);
+
+            var targetExpression = FromCstToExpression(targetNode);
+            var valueExpression = FromCstToExpression(valueNode);
+
+            // The target of an assignment must be a valid "l-value".
+            // We need to check the actual expression, which might be wrapped in an EmbeddedExpression.
+            var effectiveTarget = targetExpression is EmbeddedExpression embedded
+                ? embedded.InnerExpression
+                : targetExpression;
+
+            if (effectiveTarget is not VariableExpression && effectiveTarget is not MemberAccessExpression)
+            {
+                // This is a semantic error, not a syntax error.
+                // A more advanced implementation might have a separate "validation" step.
+                // For now, throwing an AstConversionException is a reasonable approach.
+                throw new AstConversionException(
+                    "The target of an assignment must be a variable or a member access (e.g., 'myVar' or 'myObj.myProp').",
+                    targetNode.Location);
+            }
+
+            return new AssignStatement(targetExpression, valueExpression, cstNode.Location);
         }
 
         private static WhenStatement ToWhenStatement(CstNode cstNode)

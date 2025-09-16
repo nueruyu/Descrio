@@ -53,20 +53,42 @@ args:
         }
 
         [Test]
-        public void ParseStatement_Assign_ShouldParseCorrectly()
+        public void ParseStatement_AssignToVariable_ShouldParseCorrectly()
         {
             var yaml = @"!assign
-name: my_var
+target: !expr my_var
 value: !expr my_var + 1";
             var statement = _parser.ParseStatementOrFail(yaml);
 
             Assert.IsInstanceOf<AssignStatement>(statement);
             var assign = (AssignStatement)statement;
-            Assert.AreEqual("my_var", ((VariableExpression)assign.Target).VariableName);
+
+            Assert.IsInstanceOf<EmbeddedExpression>(assign.Target);
+            var targetWrapper = (EmbeddedExpression)assign.Target;
+            Assert.IsInstanceOf<VariableExpression>(targetWrapper.InnerExpression);
+            Assert.AreEqual("my_var", ((VariableExpression)targetWrapper.InnerExpression).VariableName);
 
             Assert.IsInstanceOf<EmbeddedExpression>(assign.ValueExpression);
-            var embeddedExpr = (EmbeddedExpression)assign.ValueExpression;
-            Assert.IsInstanceOf<BinaryExpression>(embeddedExpr.InnerExpression);
+            var valueWrapper = (EmbeddedExpression)assign.ValueExpression;
+            Assert.IsInstanceOf<BinaryExpression>(valueWrapper.InnerExpression);
+        }
+
+        [Test]
+        public void ParseStatement_AssignToMember_ShouldParseCorrectly()
+        {
+            var yaml = @"!assign
+target: !expr my_obj.my_prop
+value: 123";
+            var statement = _parser.ParseStatementOrFail(yaml);
+
+            Assert.IsInstanceOf<AssignStatement>(statement);
+            var assign = (AssignStatement)statement;
+
+            Assert.IsInstanceOf<EmbeddedExpression>(assign.Target);
+            var targetWrapper = (EmbeddedExpression)assign.Target;
+            Assert.IsInstanceOf<MemberAccessExpression>(targetWrapper.InnerExpression);
+
+            Assert.IsInstanceOf<LiteralExpression>(assign.ValueExpression);
         }
 
         [Test]
