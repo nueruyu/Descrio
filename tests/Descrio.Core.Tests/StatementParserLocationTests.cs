@@ -131,11 +131,11 @@ namespace Descrio.EditorTests
 
             Assert.IsInstanceOf<LetStatement>(statement);
             var letStmt = (LetStatement)statement;
-            Assert.AreEqual(new SourceRange(2, 1, 7, 0), letStmt.Location, "Outer LetStatement location is wrong.");
+            Assert.AreEqual(new SourceRange(2, 1, 6, 7), letStmt.Location, "Outer LetStatement location is wrong.");
 
             Assert.IsInstanceOf<EmbeddedExpression>(letStmt.ValueExpression);
             var embeddedExpr = (EmbeddedExpression)letStmt.ValueExpression;
-            Assert.AreEqual(new SourceRange(4, 10, 7, 0), embeddedExpr.Location, "EmbeddedExpression wrapper location is wrong.");
+            Assert.AreEqual(new SourceRange(4, 10, 6, 7), embeddedExpr.Location, "EmbeddedExpression wrapper location is wrong.");
 
             var innerExpr = embeddedExpr.InnerExpression;
             Assert.IsInstanceOf<BinaryExpression>(innerExpr);

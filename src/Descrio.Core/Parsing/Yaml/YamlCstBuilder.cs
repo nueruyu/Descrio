@@ -1,5 +1,6 @@
 using Descrio.Data;
 using Descrio.Parsing.Cst;
+using Descrio.Parsing.Utils;
 using Descrio.Syntax;
 using System.Collections.Generic;
 using System.IO;
@@ -37,9 +38,12 @@ namespace Descrio.Parsing.Yaml
         };
 
         private IParser _parser;
+        private string _yamlContent;
 
         public CstRoot Build(string yamlContent)
         {
+            _yamlContent = yamlContent;
+
             var errors = new List<SyntaxError>();
             CstNode? root = null;
 
@@ -104,11 +108,17 @@ namespace Descrio.Parsing.Yaml
             var typeHint = GetNodeTypeFromTag(rawTag);
             _parser.MoveNext();
 
+            var (endLine, endColumn) = SourcePositionCalculator.GetPreviousCharacterLocation(
+                _yamlContent,
+                (int)scalar.End.Index,
+                (int)scalar.End.Line,
+                (int)scalar.End.Column);
+
             var location = ToSourceRange(
                 scalar.Start.Line,
                 scalar.Start.Column,
-                scalar.End.Line,
-                scalar.End.Column - 1);
+                endLine,
+                endColumn);
 
             return new ScalarCstNode(scalar.Value, typeHint, rawTag, location);
         }
