@@ -91,10 +91,10 @@ namespace Descrio.Generator.Callable
                 sb.AppendLine($"if (p_val_{paramName} != null && !p_targetType_{paramName}.IsInstanceOfType(p_val_{paramName}))");
                 using (sb.IndentedBlock())
                 {
-                    sb.AppendLine("if (Descrio.Execution.Converters.TypeConverterRegistry.TryGetConverter(p_targetType_{paramName}, out var converter))");
+                    sb.AppendLine($"if (Descrio.Execution.Converters.TypeConverterRegistry.TryGetConverter(p_targetType_{paramName}, out var converter_{paramName}))");
                     using (sb.IndentedBlock())
                     {
-                        sb.AppendLine($"p_val_{paramName} = converter.Convert(p_val_{paramName});");
+                        sb.AppendLine($"p_val_{paramName} = converter_{paramName}.Convert(p_val_{paramName});");
                     }
                     sb.AppendLine("else");
                     using (sb.IndentedBlock())
@@ -103,12 +103,20 @@ namespace Descrio.Generator.Callable
                     }
                 }
 
-                sb.AppendLine($"var p_{paramName} = ({typeName}?)p_val_{paramName};");
+                var castString = GetCastString(param.Type);
+                sb.AppendLine($"var p_{paramName} = {castString}p_val_{paramName};");
 
                 callParamNames.Add($"p_{paramName}");
                 sb.AppendLine();
             }
             return callParamNames;
+        }
+
+        private static string GetCastString(ITypeSymbol typeSymbol)
+        {
+            bool isNonNullableValueType = typeSymbol.IsValueType && typeSymbol.NullableAnnotation != NullableAnnotation.Annotated;
+            var typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            return isNonNullableValueType ? $"({typeName})" : $"({typeName}?)";
         }
 
         private static void AppendMethodCallLogic(IndentedStringBuilder sb, CallableMethodInfo methodInfo, List<string> callParamNames)

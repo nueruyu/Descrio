@@ -10,12 +10,6 @@ namespace Descrio.Generator.Callable
     /// </summary>
     internal static class ConverterBuilder
     {
-        /// <summary>
-        /// Builds the source code for a single TypeConverter class that handles mapping a dictionary to a specific class type.
-        /// </summary>
-        /// <param name="typeSymbol">The symbol of the class/struct to create a converter for.</param>
-        /// <param name="allMappableTypes">A collection of all types that will have converters, used to handle nested types correctly.</param>
-        /// <returns>The generated C# source code for the converter class.</returns>
         public static string BuildTypeConverterClass(ITypeSymbol typeSymbol, IReadOnlyCollection<ITypeSymbol> allMappableTypes)
         {
             var fullTypeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -62,19 +56,18 @@ namespace Descrio.Generator.Callable
                         if (!canWrite || memberName is null || memberType is null)
                             continue;
 
-                        var memberTypeName = memberType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-
                         sb.AppendLine($"if (dataDict.TryGetValue(\"{memberName}\", out var memberVal_{memberName}) && memberVal_{memberName} != null)");
                         using (sb.IndentedBlock())
                         {
                             sb.AppendLine("try");
                             using (sb.IndentedBlock())
                             {
-                                AppendMemberConversionLogic(sb, "instance", memberName, memberType, memberTypeName, allMappableTypes);
+                                AppendMemberConversionLogic(sb, "instance", memberName, memberType, allMappableTypes);
                             }
                             sb.AppendLine("catch (Exception ex)");
                             using (sb.IndentedBlock())
                             {
+                                var memberTypeName = memberType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
                                 sb.AppendLine($"throw new InvalidOperationException(\"Failed to map member '{memberName}' of type '{memberTypeName}'. See inner exception for details.\", ex);");
                             }
                         }
@@ -93,101 +86,6 @@ namespace Descrio.Generator.Callable
             return sb.ToString();
         }
 
-        public static (string?, ITypeSymbol?, bool) GetMemberInfo(ISymbol symbol)
-        {
-            if (symbol is IPropertySymbol prop && prop.SetMethod != null && prop.DeclaredAccessibility == Accessibility.Public)
-            {
-                return (prop.Name, prop.Type, true);
-            }
-            if (symbol is IFieldSymbol field && !field.IsReadOnly && field.DeclaredAccessibility == Accessibility.Public)
-            {
-                return (field.Name, field.Type, true);
-            }
-            return (null, null, false);
-        }
-
-        private static void AppendMemberConversionLogic(IndentedStringBuilder sb, string instanceName, string memberName, ITypeSymbol memberType, string memberTypeName, IReadOnlyCollection<ITypeSymbol> allMappableTypes)
-        {
-            var valueToConvert = $"memberVal_{memberName}";
-
-            // Case 1: Nested Mappable Type
-            if (allMappableTypes.Contains(memberType, SymbolEqualityComparer.Default))
-            {
-                sb.AppendLine($"if (TypeConverterRegistry.TryGetConverter(typeof({memberTypeName}), out var converter_{memberName}))");
-                using (sb.IndentedBlock())
-                {
-                    sb.AppendLine($"{instanceName}.{memberName} = ({memberTypeName}?)converter_{memberName}.Convert({valueToConvert});");
-                }
-                sb.AppendLine("else");
-                using (sb.IndentedBlock())
-                {
-                    sb.AppendLine($"throw new InvalidOperationException($\"Converter not found for nested type '{memberTypeName}'. This should have been generated.\");");
-                }
-                return;
-            }
-
-            // Case 2: Enum Type
-            if (memberType.BaseType != null && memberType.BaseType.ToDisplayString() == "global::System.Enum")
-            {
-                sb.AppendLine($"if ({valueToConvert} is string strVal_{memberName})");
-                using (sb.IndentedBlock())
-                {
-                    sb.AppendLine($"{instanceName}.{memberName} = ({memberTypeName})Enum.Parse(typeof({memberTypeName}), strVal_{memberName}, true);");
-                }
-                sb.AppendLine("else");
-                using (sb.IndentedBlock())
-                {
-                    sb.AppendLine($"{instanceName}.{memberName} = ({memberTypeName})Enum.ToObject(typeof({memberTypeName}), {valueToConvert});");
-                }
-                return;
-            }
-
-            // Case 3: Collection Types (List, Array)
-            if (memberType is INamedTypeSymbol namedType && namedType.IsGenericType && namedType.ConstructedFrom.ToDisplayString() == "global::System.Collections.Generic.List<T>")
-            {
-                var itemType = namedType.TypeArguments[0];
-                AppendCollectionConversionLogic(sb, instanceName, memberName, memberTypeName, itemType, valueToConvert, "ToList", allMappableTypes);
-                return;
-            }
-
-            if (memberType is IArrayTypeSymbol arrayType)
-            {
-                var elementType = arrayType.ElementType;
-                AppendCollectionConversionLogic(sb, instanceName, memberName, memberTypeName, elementType, valueToConvert, "ToArray", allMappableTypes);
-                return;
-            }
-
-            // Case 4: Primitive or other convertible types
-            sb.AppendLine($"{instanceName}.{memberName} = ({memberTypeName}?)System.Convert.ChangeType({valueToConvert}, typeof({memberTypeName}));");
-        }
-
-        private static void AppendCollectionConversionLogic(IndentedStringBuilder sb, string instanceName, string memberName, string memberTypeName, ITypeSymbol itemType, string valueToConvert, string linqMethod, IReadOnlyCollection<ITypeSymbol> allMappableTypes)
-        {
-            var itemTypeName = itemType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            sb.AppendLine($"if ({valueToConvert} is not System.Collections.IEnumerable list_{memberName}) throw new InvalidCastException(\"Expected a list or array.\");");
-            sb.AppendLine();
-            sb.AppendLine($"{instanceName}.{memberName} = list_{memberName}.Cast<object>().Select(item =>");
-            using (sb.IndentedBlock())
-            {
-                sb.AppendLine("if (item == null) return null;");
-                if (allMappableTypes.Contains(itemType, SymbolEqualityComparer.Default))
-                {
-                    sb.AppendLine($"if (!TypeConverterRegistry.TryGetConverter(typeof({itemTypeName}), out var converter)) throw new InvalidOperationException($\"Converter for list item '{itemTypeName}' not found.\");");
-                    sb.AppendLine($"return ({itemTypeName}?)converter.Convert(item);");
-                }
-                else
-                {
-                    sb.AppendLine($"return ({itemTypeName}?)System.Convert.ChangeType(item, typeof({itemTypeName}));");
-                }
-            }
-            sb.AppendLine($").{linqMethod}<{itemTypeName}?>();");
-        }
-
-        /// <summary>
-        /// Builds the source code for the static initializer class that registers all generated converters.
-        /// </summary>
-        /// <param name="allMappableTypes">A collection of all types that have converters to be registered.</param>
-        /// <returns>The generated C# source code for the initializer class.</returns>
         public static string BuildInitializerClass(IReadOnlyCollection<ITypeSymbol> allMappableTypes)
         {
             var sb = new IndentedStringBuilder();
@@ -198,16 +96,9 @@ namespace Descrio.Generator.Callable
             sb.AppendLine("namespace Descrio.Generated");
             using (sb.IndentedBlock())
             {
-                sb.AppendLine("/// <summary>");
-                sb.AppendLine("/// Contains the entry point for initializing all source-generated components for Descrio.");
-                sb.AppendLine("/// This is called automatically by the runtime and should not be called manually.");
-                sb.AppendLine("/// </summary>");
                 sb.AppendLine("internal static partial class DescrioInitializer");
                 using (sb.IndentedBlock())
                 {
-                    sb.AppendLine("/// <summary>");
-                    sb.AppendLine("/// Registers all auto-generated type converters with the Descrio runtime.");
-                    sb.AppendLine("/// </summary>");
                     sb.AppendLine("internal static void Initialize()");
                     using (sb.IndentedBlock())
                     {
@@ -229,7 +120,6 @@ namespace Descrio.Generator.Callable
                 }
             }
 
-            // Also generate the partial class definition for the engine side to hook into.
             sb.AppendLine();
             sb.AppendLine("namespace Descrio.Execution.Converters");
             using (sb.IndentedBlock())
@@ -246,6 +136,110 @@ namespace Descrio.Generator.Callable
             }
 
             return sb.ToString();
+        }
+
+        internal static (string?, ITypeSymbol?, bool) GetMemberInfo(ISymbol symbol)
+        {
+            if (symbol is IPropertySymbol prop && prop.SetMethod != null && prop.DeclaredAccessibility == Accessibility.Public)
+            {
+                return (prop.Name, prop.Type, true);
+            }
+            if (symbol is IFieldSymbol field && !field.IsReadOnly && field.DeclaredAccessibility == Accessibility.Public)
+            {
+                return (field.Name, field.Type, true);
+            }
+            return (null, null, false);
+        }
+
+        private static void AppendMemberConversionLogic(IndentedStringBuilder sb, string instanceName, string memberName, ITypeSymbol memberType, IReadOnlyCollection<ITypeSymbol> allMappableTypes)
+        {
+            var valueToConvert = $"memberVal_{memberName}";
+            var memberTypeName = memberType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var castType = GetCastString(memberType);
+
+            // Case 1: Nested Mappable Type
+            if (allMappableTypes.Contains(memberType, SymbolEqualityComparer.Default))
+            {
+                sb.AppendLine($"if (TypeConverterRegistry.TryGetConverter(typeof({memberTypeName}), out var converter_{memberName}))");
+                using (sb.IndentedBlock())
+                {
+                    sb.AppendLine($"{instanceName}.{memberName} = {castType}converter_{memberName}.Convert({valueToConvert});");
+                }
+                sb.AppendLine("else");
+                using (sb.IndentedBlock())
+                {
+                    sb.AppendLine($"throw new InvalidOperationException($\"Converter not found for nested type '{memberTypeName}'.\");");
+                }
+                return;
+            }
+
+            // Case 2: Enum Type
+            if (memberType.BaseType != null && memberType.BaseType.ToDisplayString() == "global::System.Enum")
+            {
+                sb.AppendLine($"if ({valueToConvert} is string strVal_{memberName})");
+                using (sb.IndentedBlock())
+                {
+                    sb.AppendLine($"{instanceName}.{memberName} = ({memberTypeName})Enum.Parse(typeof({memberTypeName}), strVal_{memberName}, true);");
+                }
+                // ★★★ ここが修正箇所 ★★★
+                sb.AppendLine("else");
+                using (sb.IndentedBlock())
+                {
+                    sb.AppendLine($"{instanceName}.{memberName} = ({memberTypeName})Enum.ToObject(typeof({memberTypeName}), {valueToConvert});");
+                }
+                return;
+            }
+
+            // Case 3: Collection Types (List, Array)
+            if (memberType is INamedTypeSymbol namedType && namedType.IsGenericType && namedType.ConstructedFrom.ToDisplayString() == "global::System.Collections.Generic.List<T>")
+            {
+                var itemType = namedType.TypeArguments[0];
+                AppendCollectionConversionLogic(sb, instanceName, memberName, itemType, valueToConvert, "ToList", allMappableTypes);
+                return;
+            }
+
+            if (memberType is IArrayTypeSymbol arrayType)
+            {
+                var elementType = arrayType.ElementType;
+                AppendCollectionConversionLogic(sb, instanceName, memberName, elementType, valueToConvert, "ToArray", allMappableTypes);
+                return;
+            }
+
+            // Case 4: Primitive or other convertible types
+            sb.AppendLine($"{instanceName}.{memberName} = {castType}System.Convert.ChangeType({valueToConvert}, typeof({memberTypeName}));");
+        }
+
+        private static void AppendCollectionConversionLogic(IndentedStringBuilder sb, string instanceName, string memberName, ITypeSymbol itemType, string valueToConvert, string linqMethod, IReadOnlyCollection<ITypeSymbol> allMappableTypes)
+        {
+            var itemTypeName = itemType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            var itemCastType = GetCastString(itemType);
+
+            sb.AppendLine($"if ({valueToConvert} is not System.Collections.IEnumerable list_{memberName}) throw new InvalidCastException(\"Expected a list or array.\");");
+            sb.AppendLine();
+            sb.AppendLine($"{instanceName}.{memberName} = list_{memberName}.Cast<object?>().Select(item =>");
+            using (sb.IndentedBlock())
+            {
+                sb.AppendLine("if (item == null) return default;");
+                if (allMappableTypes.Contains(itemType, SymbolEqualityComparer.Default))
+                {
+                    sb.AppendLine($"if (!TypeConverterRegistry.TryGetConverter(typeof({itemTypeName}), out var converter)) throw new InvalidOperationException($\"Converter for list item '{itemTypeName}' not found.\");");
+                    sb.AppendLine($"return {itemCastType}converter.Convert(item);");
+                }
+                else
+                {
+                    sb.AppendLine($"return {itemCastType}System.Convert.ChangeType(item, typeof({itemTypeName}));");
+                }
+            }
+            sb.AppendLine($").{linqMethod}();");
+        }
+
+        private static string GetCastString(ITypeSymbol typeSymbol)
+        {
+            // If the type is a non-nullable value type (like int, bool, structs), cast to it directly.
+            // Otherwise, cast to its nullable version (like string?, MyClass?, int?).
+            bool isNonNullableValueType = typeSymbol.IsValueType && typeSymbol.NullableAnnotation != NullableAnnotation.Annotated;
+            var typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            return isNonNullableValueType ? $"({typeName})" : $"({typeName}?)";
         }
     }
 }
