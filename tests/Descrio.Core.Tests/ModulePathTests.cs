@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using Descrio.Data;
 
 namespace Descrio.EditorTests
 {

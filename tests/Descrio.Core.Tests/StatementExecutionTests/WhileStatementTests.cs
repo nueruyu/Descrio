@@ -1,3 +1,4 @@
+using Descrio.Syntax;
 using NUnit.Framework;
 using System.Threading.Tasks;
 using static Descrio.EditorTests.TestExpressionFactory;

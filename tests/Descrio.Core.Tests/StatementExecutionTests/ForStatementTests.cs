@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using static Descrio.EditorTests.TestStatementFactory;
 using static Descrio.EditorTests.TestExpressionFactory;
+using Descrio.Syntax;
 
 namespace Descrio.EditorTests.StatementExecutionTests
 {

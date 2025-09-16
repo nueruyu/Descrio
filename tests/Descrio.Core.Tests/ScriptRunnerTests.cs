@@ -5,9 +5,13 @@ using System;
 using System.Linq;
 using static Descrio.EditorTests.TestStatementFactory;
 using static Descrio.EditorTests.TestExpressionFactory;
-using Descrio.Parse.ModuleLoaders;
+using Descrio.Modules.ModuleLoaders;
 using Descrio.Execution;
 using ExecutionContext = Descrio.Execution.ExecutionContext;
+using Descrio.Abstractions;
+using Descrio.Execution.Callables;
+using Descrio.Syntax;
+using Descrio.Data;
 
 namespace Descrio.EditorTests
 {

@@ -1,5 +1,5 @@
 using NUnit.Framework;
-using Descrio.Parse;
+using Descrio.Parsing;
 
 namespace Descrio.EditorTests
 {
