@@ -12,12 +12,12 @@ namespace Descrio.LspServer.Server
         private JsonRpc _jsonRpc = null!;
         private readonly DocumentManager _documentManager = new DocumentManager();
 
-        public void Initialize(JsonRpc jsonRpc)
+        public void SetJsonRpc(JsonRpc jsonRpc)
         {
             _jsonRpc = jsonRpc;
         }
 
-        [JsonRpcMethod(Methods.InitializeName)]
+        [JsonRpcMethod(Methods.InitializeName, UseSingleObjectParameterDeserialization = true)]
         public InitializeResult Initialize(InitializeParams @params)
         {
             return new InitializeResult

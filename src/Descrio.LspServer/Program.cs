@@ -6,11 +6,13 @@ class Program
     static async Task Main(string[] args)
     {
         var server = new DescrioLanguageServer();
-        var jsonRpc = new JsonRpc(Console.OpenStandardInput(), Console.OpenStandardOutput());
+        var jsonRpc = new JsonRpc(
+            Console.OpenStandardOutput(),
+            Console.OpenStandardInput());
 
         jsonRpc.AddLocalRpcTarget(server);
 
-        server.Initialize(jsonRpc);
+        server.SetJsonRpc(jsonRpc);
 
         jsonRpc.StartListening();
         await jsonRpc.Completion;
