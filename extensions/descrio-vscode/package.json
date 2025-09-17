@@ -26,6 +26,13 @@
         ],
         "configuration": "./language-configuration.json"
       }
+    ],
+    "grammars": [
+      {
+        "language": "descrio",
+        "scopeName": "source.descrio",
+        "path": "./syntaxes/descrio.tmLanguage.json"
+      }
     ]
   },
   "scripts": {

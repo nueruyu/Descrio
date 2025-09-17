@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Descrio",
+  "scopeName": "source.descrio",
+  "fileTypes": [
+    "descrio.yaml",
+    "dsc.yaml"
+  ],
+  "patterns": [
+    {
+      "include": "source.yaml"
+    },
+    {
+      "comment": "Descrio specific tags like !let, !run, etc.",
+      "name": "keyword.control.flow.descrio",
+      "match": "!(let|var|when|for|while|match|function|return|break|continue|try|finally)\\b"
+    },
+    {
+      "comment": "Descrio execution and definition tags",
+      "name": "keyword.control.definition.descrio",
+      "match": "!(assign|run|dispatch|lambda|throw|assert)\\b"
+    },
+    {
+      "comment": "The !expr tag, which is special.",
+      "name": "entity.name.tag.yaml",
+      "match": "!expr\\b"
+    }
+  ],
+
+  "repository": {}
+}

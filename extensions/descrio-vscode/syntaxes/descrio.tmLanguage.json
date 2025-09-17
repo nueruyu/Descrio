@@ -1,0 +1,120 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Descrio",
+  "scopeName": "source.descrio",
+  "fileTypes": ["descrio.yaml", "dsc.yaml"],
+  "patterns": [
+    {
+      "include": "#main"
+    }
+  ],
+  "repository": {
+    "main": {
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#descrio_keywords" },
+        { "include": "#booleans" },
+        { "include": "#nulls" },
+        { "include": "#anchors" },
+        { "include": "#tags" },
+        { "include": "#strings" },
+        { "include": "#keys" },
+        { "include": "#numbers" }
+      ]
+    },
+    "descrio_keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.descrio",
+          "match": "!(let|var|assign|when|for|while|match|function|return|break|continue|try|throw|assert|run|dispatch|lambda)\\b"
+        },
+        {
+          "name": "support.type.descrio",
+          "match": "!expr\\b"
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.yaml",
+          "match": "(^|\\s)(#.*$)"
+        }
+      ]
+    },
+    "booleans": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.yaml",
+          "match": "\\b(true|True|TRUE|false|False|FALSE)\\b"
+        }
+      ]
+    },
+    "nulls": {
+      "patterns": [
+        {
+          "name": "constant.language.null.yaml",
+          "match": "\\b(null|Null|NULL|~)\\b"
+        }
+      ]
+    },
+    "anchors": {
+      "patterns": [
+        {
+          "name": "variable.other.alias.yaml",
+          "match": "[*&]\\S+"
+        }
+      ]
+    },
+    "tags": {
+      "patterns": [
+        {
+          "name": "entity.name.tag.yaml",
+          "match": "!\\S*"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.yaml",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.yaml",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.yaml",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.yaml",
+              "match": "''"
+            }
+          ]
+        }
+      ]
+    },
+    "keys": {
+      "patterns": [
+        {
+          "name": "entity.name.tag.yaml",
+          "match": "([a-zA-Z0-9_\\-]+)\\s*(:)"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.yaml",
+          "match": "[+-]?[0-9_]+(\\.[0-9_]+)?([eE][+-]?[0-9_]+)?"
+        }
+      ]
+    }
+  }
+}
