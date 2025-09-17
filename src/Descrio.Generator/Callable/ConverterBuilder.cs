@@ -157,7 +157,8 @@ namespace Descrio.Generator.Callable
             var memberTypeName = memberType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             var castType = GetCastString(memberType);
 
-            if (memberType.BaseType != null && memberType.BaseType.ToDisplayString() == "global::System.Enum")
+            // Case 1: Enum Type
+            if (memberType.TypeKind == TypeKind.Enum)
             {
                 sb.AppendLine($"if ({valueToConvert} is string strVal_{memberName})");
                 using (sb.IndentedBlock())
@@ -172,13 +173,22 @@ namespace Descrio.Generator.Callable
                 return;
             }
 
-            if (memberType is INamedTypeSymbol namedType && namedType.IsGenericType && namedType.OriginalDefinition.ToDisplayString() == "global::System.Collections.Generic.List<T>")
+            // Case 2: Collection Types (List, Array)
+            if (memberType is INamedTypeSymbol namedType && namedType.IsGenericType && namedType.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.List<T>")
             {
                 var itemType = namedType.TypeArguments[0];
                 AppendCollectionConversionLogic(sb, instanceName, memberName, itemType, valueToConvert, "ToList", allMappableTypes);
                 return;
             }
 
+            if (memberType is IArrayTypeSymbol arrayType)
+            {
+                var elementType = arrayType.ElementType;
+                AppendCollectionConversionLogic(sb, instanceName, memberName, elementType, valueToConvert, "ToArray", allMappableTypes);
+                return;
+            }
+
+            // Case 3: Nested Mappable Type
             if (allMappableTypes.Contains(memberType, SymbolEqualityComparer.Default))
             {
                 sb.AppendLine($"if (TypeConverterRegistry.TryGetConverter(typeof({memberTypeName}), out var converter_{memberName}))");
@@ -194,6 +204,7 @@ namespace Descrio.Generator.Callable
                 return;
             }
 
+            // Case 4: Primitive or other convertible types
             sb.AppendLine($"{instanceName}.{memberName} = {castType}System.Convert.ChangeType({valueToConvert}, typeof({memberTypeName}));");
         }
 

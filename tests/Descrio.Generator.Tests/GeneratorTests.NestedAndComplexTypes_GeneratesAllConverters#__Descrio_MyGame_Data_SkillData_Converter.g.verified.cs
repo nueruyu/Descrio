@@ -52,15 +52,12 @@ namespace MyGame.Data
             {
                 try
                 {
-                    if (memberVal_DamageEffects is not System.Collections.IEnumerable list_DamageEffects)
-                        throw new InvalidCastException("Expected a list or array.");
-
+                    if (memberVal_DamageEffects is not System.Collections.IEnumerable list_DamageEffects) throw new InvalidCastException("Expected a list or array.");
+                    
                     instance.DamageEffects = list_DamageEffects.Cast<object?>().Select(item =>
                     {
-                        if (item == null)
-                            return default;
-                        if (!TypeConverterRegistry.TryGetConverter(typeof(global::MyGame.Data.DamageInfo), out var converter))
-                            throw new InvalidOperationException($"Converter for list item 'global::MyGame.Data.DamageInfo' not found.");
+                        if (item == null) return default;
+                        if (!TypeConverterRegistry.TryGetConverter(typeof(global::MyGame.Data.DamageInfo), out var converter)) throw new InvalidOperationException($"Converter for list item 'global::MyGame.Data.DamageInfo' not found.");
                         return (global::MyGame.Data.DamageInfo?)converter.Convert(item);
                     }
                     ).ToList();
@@ -74,15 +71,12 @@ namespace MyGame.Data
             {
                 try
                 {
-                    if (memberVal_BonusEffects is not System.Collections.IEnumerable list_BonusEffects)
-                        throw new InvalidCastException("Expected a list or array.");
-
+                    if (memberVal_BonusEffects is not System.Collections.IEnumerable list_BonusEffects) throw new InvalidCastException("Expected a list or array.");
+                    
                     instance.BonusEffects = list_BonusEffects.Cast<object?>().Select(item =>
                     {
-                        if (item == null)
-                            return default;
-                        if (!TypeConverterRegistry.TryGetConverter(typeof(global::MyGame.Data.DamageInfo), out var converter))
-                            throw new InvalidOperationException($"Converter for list item 'global::MyGame.Data.DamageInfo' not found.");
+                        if (item == null) return default;
+                        if (!TypeConverterRegistry.TryGetConverter(typeof(global::MyGame.Data.DamageInfo), out var converter)) throw new InvalidOperationException($"Converter for list item 'global::MyGame.Data.DamageInfo' not found.");
                         return (global::MyGame.Data.DamageInfo?)converter.Convert(item);
                     }
                     ).ToArray();
