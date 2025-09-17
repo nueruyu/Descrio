@@ -8,8 +8,7 @@ namespace Descrio.Generated
     {
         internal static void Initialize()
         {
-            TypeConverterRegistry.RegisterCore(typeof(global::MyGame.Data.SkillData), new MyGame.Data.__Descrio_MyGame_Data_SkillData_Converter());
-            TypeConverterRegistry.RegisterCore(typeof(global::MyGame.Data.DamageInfo), new MyGame.Data.__Descrio_MyGame_Data_DamageInfo_Converter());
+            TypeConverterRegistry.RegisterCore(typeof(global::MyGame.Data.Vector2D), new MyGame.Data.__Descrio_MyGame_Data_Vector2D_Converter());
         }
     }
 }
