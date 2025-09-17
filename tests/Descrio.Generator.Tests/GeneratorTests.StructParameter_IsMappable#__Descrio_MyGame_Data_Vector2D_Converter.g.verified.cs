@@ -12,13 +12,12 @@ namespace MyGame.Data
     {
         public object? Convert(object? source)
         {
-            if (source == null)
-                return null;
+            if (source == null) return null;
             if (!(source is IDictionary<object, object> dataDict))
             {
                 throw new InvalidCastException($"Expected a dictionary to map to global::MyGame.Data.Vector2D, but received a {source.GetType().Name}.");
             }
-
+            
             var instance = new global::MyGame.Data.Vector2D();
             if (dataDict.TryGetValue("X", out var memberVal_X) && memberVal_X != null)
             {
