@@ -12,14 +12,71 @@
     "main": {
       "patterns": [
         { "include": "#comments" },
+        { "include": "#key_value_pair" },
         { "include": "#descrio_keywords" },
+        { "include": "#strings" },
         { "include": "#booleans" },
         { "include": "#nulls" },
         { "include": "#anchors" },
         { "include": "#tags" },
-        { "include": "#strings" },
-        { "include": "#keys" },
         { "include": "#numbers" }
+      ]
+    },
+    "key_value_pair": {
+      "patterns": [
+        {
+          "match": "^(\\s*)([a-zA-Z0-9_\\.-]+)(\\s*:\\s+)(.*)$",
+          "captures": {
+            "2": { "name": "entity.name.tag.yaml" },
+            "3": { "name": "punctuation.separator.key-value.yaml" },
+            "4": {
+              "patterns": [
+                { "include": "#expr_value" },
+                { "include": "#generic_value" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "generic_value": {
+      "patterns": [
+        { "include": "#descrio_keywords" },
+        { "include": "#strings" },
+        { "include": "#booleans" },
+        { "include": "#nulls" },
+        { "include": "#numbers" },
+        { "include": "#anchors" },
+        { "include": "#tags" },
+        { "name": "string.unquoted.yaml", "match": ".*" }
+      ]
+    },
+    "expr_value": {
+      "begin": "(!expr)\\s+",
+      "end": "(?=#)|$",
+      "beginCaptures": {
+        "1": { "name": "support.type.descrio" }
+      },
+      "patterns": [{ "include": "#expression_context" }]
+    },
+    "expression_context": {
+      "patterns": [
+        { "include": "#strings" },
+        { "include": "#booleans" },
+        { "include": "#nulls" },
+        { "include": "#numbers" },
+        {
+          "name": "keyword.operator.arithmetic.descrio",
+          "match": "[+\\-*/]"
+        },
+        {
+          "name": "keyword.operator.comparison.descrio",
+          "match": "==|!=|>=|<=|>|<"
+        },
+        {
+          "name": "variable.other.descrio",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+        }
       ]
     },
     "descrio_keywords": {
@@ -27,19 +84,12 @@
         {
           "name": "keyword.control.descrio",
           "match": "!(let|var|assign|when|for|while|match|function|return|break|continue|try|throw|assert|run|dispatch|lambda)\\b"
-        },
-        {
-          "name": "support.type.descrio",
-          "match": "!expr\\b"
         }
       ]
     },
     "comments": {
       "patterns": [
-        {
-          "name": "comment.line.number-sign.yaml",
-          "match": "(^|\\s)(#.*$)"
-        }
+        { "name": "comment.line.number-sign.yaml", "match": "(^|\\s)(#.*$)" }
       ]
     },
     "booleans": {
@@ -59,20 +109,10 @@
       ]
     },
     "anchors": {
-      "patterns": [
-        {
-          "name": "variable.other.alias.yaml",
-          "match": "[*&]\\S+"
-        }
-      ]
+      "patterns": [{ "name": "variable.other.alias.yaml", "match": "[*&]\\S+" }]
     },
     "tags": {
-      "patterns": [
-        {
-          "name": "entity.name.tag.yaml",
-          "match": "!\\S*"
-        }
-      ]
+      "patterns": [{ "name": "entity.name.tag.yaml", "match": "!\\S*" }]
     },
     "strings": {
       "patterns": [
@@ -81,10 +121,7 @@
           "begin": "\"",
           "end": "\"",
           "patterns": [
-            {
-              "name": "constant.character.escape.yaml",
-              "match": "\\\\."
-            }
+            { "name": "constant.character.escape.yaml", "match": "\\\\." }
           ]
         },
         {
@@ -92,19 +129,8 @@
           "begin": "'",
           "end": "'",
           "patterns": [
-            {
-              "name": "constant.character.escape.yaml",
-              "match": "''"
-            }
+            { "name": "constant.character.escape.yaml", "match": "''" }
           ]
-        }
-      ]
-    },
-    "keys": {
-      "patterns": [
-        {
-          "name": "entity.name.tag.yaml",
-          "match": "([a-zA-Z0-9_\\-]+)\\s*(:)"
         }
       ]
     },
@@ -112,7 +138,7 @@
       "patterns": [
         {
           "name": "constant.numeric.yaml",
-          "match": "[+-]?[0-9_]+(\\.[0-9_]+)?([eE][+-]?[0-9_]+)?"
+          "match": "\\b([+-]?[0-9_]+(\\.[0-9_]+)?([eE][+-]?[0-9_]+)?)\\b"
         }
       ]
     }
