@@ -138,9 +138,9 @@ namespace Descrio.Generator.Callable
             return sb.ToString();
         }
 
-        internal static (string?, ITypeSymbol?, bool) GetMemberInfo(ISymbol symbol)
+        public static (string?, ITypeSymbol?, bool) GetMemberInfo(ISymbol symbol)
         {
-            if (symbol is IPropertySymbol prop && prop.SetMethod != null && prop.DeclaredAccessibility == Accessibility.Public)
+            if (symbol is IPropertySymbol prop && prop.SetMethod != null && prop.SetMethod.DeclaredAccessibility == Accessibility.Public)
             {
                 return (prop.Name, prop.Type, true);
             }
@@ -181,7 +181,6 @@ namespace Descrio.Generator.Callable
                 {
                     sb.AppendLine($"{instanceName}.{memberName} = ({memberTypeName})Enum.Parse(typeof({memberTypeName}), strVal_{memberName}, true);");
                 }
-                // ★★★ ここが修正箇所 ★★★
                 sb.AppendLine("else");
                 using (sb.IndentedBlock())
                 {

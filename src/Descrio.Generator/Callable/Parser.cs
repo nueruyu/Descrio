@@ -96,22 +96,32 @@ namespace Descrio.Generator.Callable
         /// </summary>
         /// <param name="type">The type symbol to analyze.</param>
         /// <returns>A list of mappable members, or null if the type is not a mappable class.</returns>
-        public static List<MappableMemberInfo> GetMappableMembers(ITypeSymbol type)
+        public static List<MappableMemberInfo>? GetMappableMembers(ITypeSymbol type)
         {
-            // Only non-special classes are candidates for mapping.
-            if (type == null || type.SpecialType != SpecialType.None || type.TypeKind != TypeKind.Class)
+            if (type == null)
+                return null;
+
+            bool isMappableKind = type.TypeKind == TypeKind.Class || type.TypeKind == TypeKind.Struct;
+            if (!isMappableKind || type.SpecialType != SpecialType.None)
+            {
+                return null;
+            }
+
+            if (type.SpecialType != SpecialType.System_String &&
+                type.AllInterfaces.Any(i => i.ToDisplayString() == "global::System.Collections.IEnumerable"))
             {
                 return null;
             }
 
             // The class must have a public parameterless constructor to be instantiated.
-            var hasDefaultConstructor = type.GetMembers()
+            bool hasDefaultConstructor = type.IsValueType || type.GetMembers()
                 .OfType<IMethodSymbol>()
                 .Any(m => m.MethodKind == MethodKind.Constructor && m.Parameters.Length == 0 && m.DeclaredAccessibility == Accessibility.Public);
 
             if (!hasDefaultConstructor)
             {
-                return null; // Cannot create an instance if no default constructor is found.
+                // ToDo: Add a diagnostic warning here.
+                return null;
             }
 
             var members = new List<MappableMemberInfo>();

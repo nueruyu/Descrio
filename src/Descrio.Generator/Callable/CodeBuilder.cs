@@ -103,8 +103,8 @@ namespace Descrio.Generator.Callable
                     }
                 }
 
-                var castString = GetCastString(param.Type);
-                sb.AppendLine($"var p_{paramName} = {castString}p_val_{paramName};");
+                var castExpression = GetCastExpression(param.Type, $"p_val_{paramName}");
+                sb.AppendLine($"var p_{paramName} = {castExpression};");
 
                 callParamNames.Add($"p_{paramName}");
                 sb.AppendLine();
@@ -112,11 +112,14 @@ namespace Descrio.Generator.Callable
             return callParamNames;
         }
 
-        private static string GetCastString(ITypeSymbol typeSymbol)
+        private static string GetCastExpression(ITypeSymbol typeSymbol, string variableName)
         {
-            bool isNonNullableValueType = typeSymbol.IsValueType && typeSymbol.NullableAnnotation != NullableAnnotation.Annotated;
             var typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            return isNonNullableValueType ? $"({typeName})" : $"({typeName}?)";
+            if (typeSymbol.IsValueType && typeSymbol.NullableAnnotation != NullableAnnotation.Annotated)
+            {
+                return $"({typeName}){variableName}!";
+            }
+            return $"({typeName}?){variableName}";
         }
 
         private static void AppendMethodCallLogic(IndentedStringBuilder sb, CallableMethodInfo methodInfo, List<string> callParamNames)
