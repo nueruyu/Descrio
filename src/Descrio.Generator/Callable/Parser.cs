@@ -101,14 +101,18 @@ namespace Descrio.Generator.Callable
             if (type == null)
                 return null;
 
-            bool isMappableKind = type.TypeKind == TypeKind.Class || type.TypeKind == TypeKind.Struct;
-            if (!isMappableKind || type.SpecialType != SpecialType.None)
+            if (type.SpecialType != SpecialType.None)
             {
                 return null;
             }
 
-            if (type.SpecialType != SpecialType.System_String &&
-                type.AllInterfaces.Any(i => i.ToDisplayString() == "global::System.Collections.IEnumerable"))
+            if (type.TypeKind != TypeKind.Class && type.TypeKind != TypeKind.Struct)
+            {
+                return null;
+            }
+
+            if (type.OriginalDefinition.ToDisplayString() is "System.Collections.Generic.List<T>" ||
+                type.OriginalDefinition.ToDisplayString() is "System.Collections.Generic.Dictionary<TKey, TValue>")
             {
                 return null;
             }
