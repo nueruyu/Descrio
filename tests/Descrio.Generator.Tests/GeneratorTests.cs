@@ -306,10 +306,10 @@ namespace MyGame.Actions
 {
     public class DuplicateActions
     {
-        [Callable(Name = ""DoAction"")]
+        [Callable(""DoAction"")]
         public void ActionOne() {}
 
-        [Callable(Name = ""DoAction"")]
+        [Callable(""DoAction"")]
         public void ActionTwo() {}
     }
 }

@@ -5,6 +5,7 @@ namespace Descrio.Generator.Callable.Models
 {
     internal class CallableMethodInfo
     {
+        public IMethodSymbol MethodSymbol { get; set; }
         public string MethodName { get; set; }
         public string CallableName { get; set; }
         public ITypeSymbol ReturnType { get; set; }

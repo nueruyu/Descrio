@@ -70,6 +70,7 @@ namespace Descrio.Generator.Callable
 
                 var methodInfo = new CallableMethodInfo
                 {
+                    MethodSymbol = methodSymbol,
                     MethodName = methodSymbol.Name,
                     CallableName = SymbolAnalyzer.GetCallableName(methodSymbol, attributeData),
                     ReturnType = methodSymbol.ReturnType,
@@ -101,7 +102,33 @@ namespace Descrio.Generator.Callable
                 classInfo.Methods.Add(methodInfo);
             }
 
+            CheckCallableNameDuplication(classInfos, context);
+
             return classInfos.Values.ToList();
+        }
+
+        static void CheckCallableNameDuplication(Dictionary<ISymbol, CallableClassInfo> classInfos, GeneratorExecutionContext context)
+        {
+            foreach (var classInfo in classInfos.Values)
+            {
+                var duplicateGroups = classInfo.Methods
+                    .GroupBy(m => m.CallableName)
+                    .Where(g => g.Count() > 1);
+
+                foreach (var group in duplicateGroups)
+                {
+                    var callableName = group.Key;
+                    foreach (var methodInfo in group)
+                    {
+                        var location = methodInfo.MethodSymbol.Locations.FirstOrDefault() ?? Location.None;
+                        context.ReportDiagnostic(Diagnostic.Create(
+                            DiagnosticDescriptors.DuplicateCallableNameError,
+                            location,
+                            callableName,
+                            classInfo.ClassName));
+                    }
+                }
+            }
         }
     }
 }
