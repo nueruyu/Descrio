@@ -23,6 +23,7 @@ namespace Descrio.Generator.Callable
                 return new List<CallableClassInfo>();
 
             var classInfos = new Dictionary<ISymbol, CallableClassInfo>(SymbolEqualityComparer.Default);
+            var reportedDiagnostics = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
 
             foreach (var methodSyntax in syntaxReceiver.CandidateMethods)
             {
@@ -32,7 +33,7 @@ namespace Descrio.Generator.Callable
                     continue;
 
                 var attributeData = methodSymbol.GetAttributes()
-                    .FirstOrDefault(ad => ad.AttributeClass.Equals(attributeSymbol, SymbolEqualityComparer.Default));
+                    .FirstOrDefault(ad => ad.AttributeClass?.Equals(attributeSymbol, SymbolEqualityComparer.Default) ?? false);
                 if (attributeData == null)
                     continue;
 
@@ -41,7 +42,6 @@ namespace Descrio.Generator.Callable
                 if (methodSymbol.DeclaredAccessibility != Accessibility.Public &&
                     methodSymbol.DeclaredAccessibility != Accessibility.Internal)
                 {
-                    // Skip private/protected methods as they cannot be accessed from the generated internal wrapper class.
                     continue;
                 }
 
@@ -58,9 +58,9 @@ namespace Descrio.Generator.Callable
                         ClassName = classSymbol.Name,
                         FullClassName = classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                         Accessibility = classSymbol.DeclaredAccessibility,
-                        Namespace = classSymbol.ContainingNamespace.IsGlobalNamespace ?
+                        Namespace = classSymbol.ContainingNamespace?.IsGlobalNamespace ?? false ?
                             null :
-                            classSymbol.ContainingNamespace.ToDisplayString(),
+                            classSymbol.ContainingNamespace?.ToDisplayString(),
                         Methods = new List<CallableMethodInfo>()
                     };
                     classInfos[classSymbol] = classInfo;
@@ -75,13 +75,23 @@ namespace Descrio.Generator.Callable
                     ReturnType = methodSymbol.ReturnType,
                     IsAwaitable = isAwaitable,
                     ReturnsValue = returnsValue,
-                    Parameters = methodSymbol.Parameters.Select(p => new ParameterInfo
+                    Parameters = methodSymbol.Parameters.Select(p =>
                     {
-                        Name = p.Name,
-                        Type = p.Type,
-                        HasDefaultValue = p.HasExplicitDefaultValue,
-                        DefaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue : null,
-                        MappableMembers = SymbolAnalyzer.GetMappableMembers(p.Type, context) // Pass context for future diagnostics
+                        var parameterInfo = new ParameterInfo
+                        {
+                            Name = p.Name,
+                            Type = p.Type,
+                            HasDefaultValue = p.HasExplicitDefaultValue,
+                            DefaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue : null,
+                            MappableMembers = SymbolAnalyzer.GetMappableMembers(p.Type)
+                        };
+
+                        if (!parameterInfo.IsMappableComplexType)
+                        {
+                            SymbolAnalyzer.ReportDiagnosticsForMappableType(p.Type, context, reportedDiagnostics);
+                        }
+
+                        return parameterInfo;
                     }).ToList()
                 };
                 classInfo.Methods.Add(methodInfo);

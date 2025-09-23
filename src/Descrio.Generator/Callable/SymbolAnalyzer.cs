@@ -78,67 +78,39 @@ namespace Descrio.Generator.Callable
             return (true, returnsValue);
         }
 
-        public static List<MappableMemberInfo>? GetMappableMembers(ITypeSymbol type, GeneratorExecutionContext? context = null)
+        public static List<MappableMemberInfo>? GetMappableMembers(ITypeSymbol type)
         {
-            if (type == null)
-                return null;
-
-            if (type.SpecialType != SpecialType.None)
+            if (!IsMappableCandidate(type) || !HasPublicParameterlessConstructor(type))
             {
                 return null;
             }
 
-            if (type.TypeKind != TypeKind.Class && type.TypeKind != TypeKind.Struct)
-            {
-                return null;
-            }
+            var members = type.GetMembers()
+                .Select(GetMemberInfo)
+                .Where(m => m.CanWrite && m.Name != null)
+                .Select(m => new MappableMemberInfo { Name = m.Name, TypeName = m.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) })
+                .ToList();
 
-            if (type.OriginalDefinition.ToDisplayString() is "System.Collections.Generic.List<T>" or "System.Collections.Generic.Dictionary<TKey, TValue>")
-            {
-                return null;
-            }
-
-            // The class must have a public parameterless constructor to be instantiated.
-            bool hasDefaultConstructor = type.IsValueType || type.GetMembers()
-                .OfType<IMethodSymbol>()
-                .Any(m => m.MethodKind == MethodKind.Constructor && m.Parameters.Length == 0 && m.DeclaredAccessibility == Accessibility.Public);
-
-            if (!hasDefaultConstructor)
-            {
-                // TODO: Add a diagnostic warning here if context is not null.
-                return null;
-            }
-
-            var members = new List<MappableMemberInfo>();
-
-            // Collect public properties with a public setter.
-            foreach (var prop in type.GetMembers().OfType<IPropertySymbol>())
-            {
-                if (prop.DeclaredAccessibility == Accessibility.Public && prop.SetMethod != null && prop.SetMethod.DeclaredAccessibility == Accessibility.Public)
-                {
-                    members.Add(new MappableMemberInfo
-                    {
-                        Name = prop.Name,
-                        TypeName = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-                    });
-                }
-            }
-
-            // Collect public, non-readonly fields.
-            foreach (var field in type.GetMembers().OfType<IFieldSymbol>())
-            {
-                if (field.DeclaredAccessibility == Accessibility.Public && !field.IsReadOnly)
-                {
-                    members.Add(new MappableMemberInfo
-                    {
-                        Name = field.Name,
-                        TypeName = field.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-                    });
-                }
-            }
-
-            // Return the list of members, or null if no mappable members were found.
             return members.Any() ? members : null;
+        }
+
+        public static void ReportDiagnosticsForMappableType(ITypeSymbol type, GeneratorExecutionContext context, HashSet<ITypeSymbol> reportedDiagnostics)
+        {
+            if (!IsMappableCandidate(type) || reportedDiagnostics.Contains(type))
+            {
+                return;
+            }
+
+            if (!HasPublicParameterlessConstructor(type))
+            {
+                var location = type.Locations.FirstOrDefault() ?? Location.None;
+                context.ReportDiagnostic(Diagnostic.Create(
+                    DiagnosticDescriptors.MissingParameterlessConstructorWarning,
+                    location,
+                    type.Name));
+
+                reportedDiagnostics.Add(type);
+            }
         }
 
         public static (string? Name, ITypeSymbol? Type, bool CanWrite) GetMemberInfo(ISymbol symbol)
@@ -152,6 +124,38 @@ namespace Descrio.Generator.Callable
                 return (field.Name, field.Type, true);
             }
             return (null, null, false);
+        }
+
+        private static bool IsMappableCandidate(ITypeSymbol type)
+        {
+            if (type == null || type.SpecialType != SpecialType.None)
+            {
+                return false;
+            }
+
+            if (type.TypeKind != TypeKind.Class && type.TypeKind != TypeKind.Struct)
+            {
+                return false;
+            }
+
+            if (type.OriginalDefinition.ToDisplayString() is "System.Collections.Generic.List<T>" or "System.Collections.Generic.Dictionary<TKey, TValue>")
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool HasPublicParameterlessConstructor(ITypeSymbol type)
+        {
+            if (type.IsValueType)
+            {
+                return true;
+            }
+
+            return type.GetMembers()
+                .OfType<IMethodSymbol>()
+                .Any(m => m.MethodKind == MethodKind.Constructor && m.Parameters.Length == 0 && m.DeclaredAccessibility == Accessibility.Public);
         }
     }
 }
