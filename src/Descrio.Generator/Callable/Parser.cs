@@ -12,7 +12,7 @@ namespace Descrio.Generator.Callable
 
         public static List<CallableClassInfo> GetCallableClasses(GeneratorExecutionContext context, ISyntaxReceiver receiver)
         {
-            if (!(receiver is SyntaxReceiver syntaxReceiver))
+            if (receiver is not SyntaxReceiver syntaxReceiver)
             {
                 return new List<CallableClassInfo>();
             }
@@ -66,12 +66,12 @@ namespace Descrio.Generator.Callable
                     classInfos[classSymbol] = classInfo;
                 }
 
-                var (isAwaitable, returnsValue) = AnalyzeReturnType(compilation, methodSymbol.ReturnType);
+                var (isAwaitable, returnsValue) = SymbolAnalyzer.AnalyzeReturnType(compilation, methodSymbol.ReturnType);
 
                 var methodInfo = new CallableMethodInfo
                 {
                     MethodName = methodSymbol.Name,
-                    CallableName = GetCallableName(methodSymbol, attributeData),
+                    CallableName = SymbolAnalyzer.GetCallableName(methodSymbol, attributeData),
                     ReturnType = methodSymbol.ReturnType,
                     IsAwaitable = isAwaitable,
                     ReturnsValue = returnsValue,
@@ -81,154 +81,13 @@ namespace Descrio.Generator.Callable
                         Type = p.Type,
                         HasDefaultValue = p.HasExplicitDefaultValue,
                         DefaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue : null,
-                        MappableMembers = GetMappableMembers(p.Type)
+                        MappableMembers = SymbolAnalyzer.GetMappableMembers(p.Type, context) // Pass context for future diagnostics
                     }).ToList()
                 };
                 classInfo.Methods.Add(methodInfo);
             }
 
             return classInfos.Values.ToList();
-        }
-
-        /// <summary>
-        /// Analyzes a type and, if it is a mappable class, returns a list of its public members.
-        /// A type is considered mappable if it's a class with a public parameterless constructor.
-        /// </summary>
-        /// <param name="type">The type symbol to analyze.</param>
-        /// <returns>A list of mappable members, or null if the type is not a mappable class.</returns>
-        public static List<MappableMemberInfo>? GetMappableMembers(ITypeSymbol type)
-        {
-            if (type == null)
-                return null;
-
-            if (type.SpecialType != SpecialType.None)
-            {
-                return null;
-            }
-
-            if (type.TypeKind != TypeKind.Class && type.TypeKind != TypeKind.Struct)
-            {
-                return null;
-            }
-
-            if (type.OriginalDefinition.ToDisplayString() is "System.Collections.Generic.List<T>" ||
-                type.OriginalDefinition.ToDisplayString() is "System.Collections.Generic.Dictionary<TKey, TValue>")
-            {
-                return null;
-            }
-
-            // The class must have a public parameterless constructor to be instantiated.
-            bool hasDefaultConstructor = type.IsValueType || type.GetMembers()
-                .OfType<IMethodSymbol>()
-                .Any(m => m.MethodKind == MethodKind.Constructor && m.Parameters.Length == 0 && m.DeclaredAccessibility == Accessibility.Public);
-
-            if (!hasDefaultConstructor)
-            {
-                // ToDo: Add a diagnostic warning here.
-                return null;
-            }
-
-            var members = new List<MappableMemberInfo>();
-
-            // Collect public properties with a public setter.
-            foreach (var prop in type.GetMembers().OfType<IPropertySymbol>())
-            {
-                if (prop.DeclaredAccessibility == Accessibility.Public && prop.SetMethod != null && prop.SetMethod.DeclaredAccessibility == Accessibility.Public)
-                {
-                    members.Add(new MappableMemberInfo
-                    {
-                        Name = prop.Name,
-                        TypeName = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-                    });
-                }
-            }
-
-            // Collect public, non-readonly fields.
-            foreach (var field in type.GetMembers().OfType<IFieldSymbol>())
-            {
-                if (field.DeclaredAccessibility == Accessibility.Public && !field.IsReadOnly)
-                {
-                    members.Add(new MappableMemberInfo
-                    {
-                        Name = field.Name,
-                        TypeName = field.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-                    });
-                }
-            }
-
-            // Return the list of members, or null if no mappable members were found.
-            return members.Any() ? members : null;
-        }
-
-        private static (bool IsAwaitable, bool ReturnsValue) AnalyzeReturnType(Compilation compilation, ITypeSymbol type)
-        {
-            if (type == null)
-                return (false, false);
-
-            var getAwaiterMethod = type.GetMembers("GetAwaiter")
-                .OfType<IMethodSymbol>()
-                .FirstOrDefault(m =>
-                    !m.IsStatic &&
-                    m.Parameters.Length == 0 &&
-                    m.DeclaredAccessibility == Accessibility.Public);
-
-            if (getAwaiterMethod == null)
-            {
-                return (false, type.SpecialType != SpecialType.System_Void);
-            }
-
-            var awaiterType = getAwaiterMethod.ReturnType;
-            if (awaiterType == null)
-                return (false, type.SpecialType != SpecialType.System_Void);
-
-            var isCompletedProperty = awaiterType.GetMembers("IsCompleted")
-                .OfType<IPropertySymbol>()
-                .FirstOrDefault(p => p.Type.SpecialType == SpecialType.System_Boolean);
-
-            var notifyCompletion = compilation.GetTypeByMetadataName("System.Runtime.CompilerServices.INotifyCompletion");
-            var getResultMethod = awaiterType.GetMembers("GetResult")
-                .OfType<IMethodSymbol>()
-                .FirstOrDefault();
-
-            if (isCompletedProperty == null ||
-                notifyCompletion == null ||
-                !awaiterType.AllInterfaces.Contains(notifyCompletion, SymbolEqualityComparer.Default) ||
-                getResultMethod == null)
-            {
-                return (false, type.SpecialType != SpecialType.System_Void);
-            }
-
-            bool returnsValue = getResultMethod.ReturnType.SpecialType != SpecialType.System_Void;
-            return (true, returnsValue);
-        }
-
-        private static string GetCallableName(IMethodSymbol methodSymbol, AttributeData attributeData)
-        {
-            // [Callable] -> methodSymbol.Name
-            // [Callable(null)] -> methodSymbol.Name
-            // [Callable("")] -> methodSymbol.Name
-            // [Callable("MyName")] -> "MyName"
-            // [Callable(Name = "MyName")] -> "MyName"
-
-            // First, check for named arguments like [Callable(Name = "MyName")]
-            var namedArgument = attributeData.NamedArguments.FirstOrDefault(arg => arg.Key == "Name");
-            if (namedArgument.Key != null &&
-                namedArgument.Value.Value is string namedArgValue &&
-                !string.IsNullOrEmpty(namedArgValue))
-            {
-                return namedArgValue;
-            }
-
-            // If not found, check for constructor arguments like [Callable("MyName")]
-            var constructorArgument = attributeData.ConstructorArguments.FirstOrDefault();
-            if (constructorArgument.Value is string ctorArgValue &&
-                !string.IsNullOrEmpty(ctorArgValue))
-            {
-                return ctorArgValue;
-            }
-
-            // If no name is provided, use the method name itself.
-            return methodSymbol.Name;
         }
     }
 }

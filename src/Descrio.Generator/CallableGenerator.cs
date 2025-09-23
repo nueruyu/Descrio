@@ -123,7 +123,7 @@ namespace Descrio.Generator
                 }
 
                 // Check if the type itself is mappable. If so, add it and its members to the queue.
-                var members = Parser.GetMappableMembers(currentType);
+                var members = SymbolAnalyzer.GetMappableMembers(currentType);
                 if (members != null)
                 {
                     collectedTypes.Add(currentType);
