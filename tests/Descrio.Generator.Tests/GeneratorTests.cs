@@ -199,5 +199,122 @@ namespace MyGame.Actions
             // Parser.cs -> GetMappableMembers -> `type.TypeKind == TypeKind.Class || type.TypeKind == TypeKind.Struct`
             return TestGenerator(inputSource);
         }
+
+        [Test]
+        public Task MethodWithReturnValue_GeneratesCorrectly()
+        {
+            const string inputSource = @"
+using Descrio.Attributes;
+
+namespace MyGame.Data
+{
+    public class EffectData
+    {
+        public string? Name { get; set; }
+        public int Power { get; set; }
+        public EffectData() {}
+    }
+}
+
+namespace MyGame.Actions
+{
+    using MyGame.Data;
+    public class ReturnValueActions
+    {
+        [Callable]
+        public int GetPower() => 100;
+
+        [Callable]
+        public EffectData GetDefaultEffect() => new EffectData { Name = ""Default"", Power = 10 };
+    }
+}
+";
+            return TestGenerator(inputSource);
+        }
+
+        [Test]
+        public Task InheritedProperties_AreMappedCorrectly()
+        {
+            const string inputSource = @"
+using Descrio.Attributes;
+
+namespace MyGame.Data
+{
+    public class BaseData
+    {
+        public string? BaseProp { get; set; }
+        public BaseData() {}
+    }
+
+    public class DerivedData : BaseData
+    {
+        public string? DerivedProp { get; set; }
+        public DerivedData() {}
+    }
+}
+
+namespace MyGame.Actions
+{
+    using MyGame.Data;
+    public class InheritanceActions
+    {
+        [Callable]
+        public void ProcessDerivedData(DerivedData data) {}
+    }
+}
+";
+            return TestGenerator(inputSource);
+        }
+
+        [Test]
+        public Task CallableInGenericClass_GeneratesCorrectly()
+        {
+            const string inputSource = @"
+using Descrio.Attributes;
+
+namespace MyGame.Data
+{
+    public class GenericData<T>
+    {
+        public T Value { get; set; }
+        public GenericData() {}
+    }
+}
+
+namespace MyGame.Actions
+{
+    using MyGame.Data;
+    public class GenericActions
+    {
+        // Note: Generic methods or methods with open generic types as parameters are complex.
+        // This test ensures the generator doesn't crash and correctly generates for a *closed* generic type.
+        [Callable]
+        public void ProcessGenericData(GenericData<string> data) {}
+    }
+}
+";
+            return TestGenerator(inputSource);
+        }
+
+        [Test]
+        public Task DuplicateCallableName_ReportsError()
+        {
+            const string inputSource = @"
+using Descrio.Attributes;
+
+namespace MyGame.Actions
+{
+    public class DuplicateActions
+    {
+        [Callable(Name = ""DoAction"")]
+        public void ActionOne() {}
+
+        [Callable(Name = ""DoAction"")]
+        public void ActionTwo() {}
+    }
+}
+";
+            return TestGenerator(inputSource);
+        }
     }
 }
