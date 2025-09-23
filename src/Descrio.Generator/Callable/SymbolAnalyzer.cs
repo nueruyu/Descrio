@@ -7,8 +7,6 @@ namespace Descrio.Generator.Callable
 {
     internal static class SymbolAnalyzer
     {
-        private const string CallableAttributeName = "Descrio.Attributes.CallableAttribute";
-
         public static string GetCallableName(IMethodSymbol methodSymbol, AttributeData attributeData)
         {
             // [Callable] -> methodSymbol.Name
@@ -141,6 +139,19 @@ namespace Descrio.Generator.Callable
 
             // Return the list of members, or null if no mappable members were found.
             return members.Any() ? members : null;
+        }
+
+        public static (string? Name, ITypeSymbol? Type, bool CanWrite) GetMemberInfo(ISymbol symbol)
+        {
+            if (symbol is IPropertySymbol prop && prop.SetMethod != null && prop.SetMethod.DeclaredAccessibility == Accessibility.Public)
+            {
+                return (prop.Name, prop.Type, true);
+            }
+            if (symbol is IFieldSymbol field && !field.IsReadOnly && field.DeclaredAccessibility == Accessibility.Public)
+            {
+                return (field.Name, field.Type, true);
+            }
+            return (null, null, false);
         }
     }
 }
