@@ -47,7 +47,7 @@ namespace Descrio.Generator.Callable.Emitter
                     sb.AppendLine();
                     sb.AppendLine($"var instance = new {fullTypeName}();");
 
-                    foreach (var member in typeSymbol.GetMembers().OfType<ISymbol>().Where(m => m is IPropertySymbol || m is IFieldSymbol))
+                    foreach (var member in SymbolAnalyzer.GetAllMappableMembers(typeSymbol))
                     {
                         (string? memberName, ITypeSymbol? memberType, bool canWrite) = SymbolAnalyzer.GetMemberInfo(member);
                         if (!canWrite || memberName is null || memberType is null)

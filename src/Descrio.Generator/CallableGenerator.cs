@@ -113,18 +113,13 @@ namespace Descrio.Generator
                     }
                 }
 
-                var members = SymbolAnalyzer.GetMappableMembers(currentType);
-                if (members != null)
+                if (SymbolAnalyzer.IsMappableType(currentType))
                 {
                     collectedTypes.Add(currentType);
 
-                    foreach (var memberSymbol in currentType.GetMembers().Where(m => m is IPropertySymbol || m is IFieldSymbol))
+                    foreach (var memberType in SymbolAnalyzer.GetAllMappableMemberTypes(currentType))
                     {
-                        (_, ITypeSymbol? memberType, bool canWrite) = SymbolAnalyzer.GetMemberInfo(memberSymbol);
-                        if (canWrite && memberType != null)
-                        {
-                            typesToProcess.Enqueue(memberType);
-                        }
+                        typesToProcess.Enqueue(memberType);
                     }
                 }
             }

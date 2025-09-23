@@ -78,20 +78,23 @@ namespace Descrio.Generator.Callable
             return (true, returnsValue);
         }
 
-        public static List<MappableMemberInfo>? GetMappableMembers(ITypeSymbol type)
+        public static bool IsMappableType(ITypeSymbol type)
         {
             if (!IsMappableCandidate(type) || !HasPublicParameterlessConstructor(type))
             {
-                return null;
+                return false;
             }
 
-            var members = type.GetMembers()
-                .Select(GetMemberInfo)
-                .Where(m => m.CanWrite && m.Name != null)
-                .Select(m => new MappableMemberInfo { Name = m.Name, TypeName = m.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) })
-                .ToList();
+            return true;
+        }
 
-            return members.Any() ? members : null;
+        public static List<MappableMemberInfo>? GetMappableMemberInfos(ITypeSymbol type)
+        {
+            return GetAllMappableMembers(type)
+                .Select(GetMemberInfo)
+                .Where(x => x.Name != null)
+                .Select(m => new MappableMemberInfo { Name = m.Name!, TypeName = m.Type!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) })
+                .ToList();
         }
 
         public static void ReportDiagnosticsForMappableType(ITypeSymbol type, GeneratorExecutionContext context, HashSet<ITypeSymbol> reportedDiagnostics)
@@ -124,6 +127,47 @@ namespace Descrio.Generator.Callable
                 return (field.Name, field.Type, true);
             }
             return (null, null, false);
+        }
+
+        public static IEnumerable<ISymbol> GetAllMappableMembers(ITypeSymbol type)
+        {
+            if (!IsMappableCandidate(type) || !HasPublicParameterlessConstructor(type))
+            {
+                return Enumerable.Empty<ITypeSymbol>();
+            }
+
+            return GetAllMembers(type)
+                .Where(x =>
+                {
+                    var m = GetMemberInfo(x);
+                    return m.CanWrite && m.Type != null;
+                })
+                .GroupBy(m => m.Name)
+                .Select(g => g.First());
+        }
+
+        public static IEnumerable<ITypeSymbol> GetAllMappableMemberTypes(ITypeSymbol type)
+        {
+            if (!IsMappableCandidate(type) || !HasPublicParameterlessConstructor(type))
+            {
+                return Enumerable.Empty<ITypeSymbol>();
+            }
+
+            return GetAllMappableMembers(type)
+                .Select(GetMemberInfo)
+                .Select(x => x.Type!);
+        }
+
+        private static IEnumerable<ISymbol> GetAllMembers(ITypeSymbol type)
+        {
+            var members = new List<ISymbol>(type.GetMembers());
+            var baseType = type.BaseType;
+            while (baseType != null && baseType.SpecialType != SpecialType.System_Object)
+            {
+                members.AddRange(baseType.GetMembers());
+                baseType = baseType.BaseType;
+            }
+            return members;
         }
 
         private static bool IsMappableCandidate(ITypeSymbol type)

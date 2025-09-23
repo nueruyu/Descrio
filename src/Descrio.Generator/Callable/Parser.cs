@@ -77,16 +77,20 @@ namespace Descrio.Generator.Callable
                     ReturnsValue = returnsValue,
                     Parameters = methodSymbol.Parameters.Select(p =>
                     {
+                        var mappableMembers = SymbolAnalyzer.IsMappableType(p.Type) ?
+                            SymbolAnalyzer.GetMappableMemberInfos(p.Type) :
+                            null;
+
                         var parameterInfo = new ParameterInfo
                         {
                             Name = p.Name,
                             Type = p.Type,
                             HasDefaultValue = p.HasExplicitDefaultValue,
                             DefaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue : null,
-                            MappableMembers = SymbolAnalyzer.GetMappableMembers(p.Type)
+                            MappableMembers = mappableMembers
                         };
 
-                        if (!parameterInfo.IsMappableComplexType)
+                        if (mappableMembers == null)
                         {
                             SymbolAnalyzer.ReportDiagnosticsForMappableType(p.Type, context, reportedDiagnostics);
                         }
