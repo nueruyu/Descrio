@@ -8,11 +8,11 @@ namespace Descrio.Generator.Callable
 {
     internal static class Parser
     {
-        private const string CallableAttributeName = "Descrio.CallableAttribute";
+        private const string CallableAttributeName = "Descrio.Attributes.CallableAttribute";
 
         public static List<CallableClassInfo> GetCallableClasses(GeneratorExecutionContext context, ISyntaxReceiver receiver)
         {
-            if (!(receiver is SyntaxReceiver syntaxReceiver))
+            if (receiver is not SyntaxReceiver syntaxReceiver)
             {
                 return new List<CallableClassInfo>();
             }
@@ -23,6 +23,7 @@ namespace Descrio.Generator.Callable
                 return new List<CallableClassInfo>();
 
             var classInfos = new Dictionary<ISymbol, CallableClassInfo>(SymbolEqualityComparer.Default);
+            var reportedDiagnostics = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
 
             foreach (var methodSyntax in syntaxReceiver.CandidateMethods)
             {
@@ -32,7 +33,7 @@ namespace Descrio.Generator.Callable
                     continue;
 
                 var attributeData = methodSymbol.GetAttributes()
-                    .FirstOrDefault(ad => ad.AttributeClass.Equals(attributeSymbol, SymbolEqualityComparer.Default));
+                    .FirstOrDefault(ad => ad.AttributeClass?.Equals(attributeSymbol, SymbolEqualityComparer.Default) ?? false);
                 if (attributeData == null)
                     continue;
 
@@ -41,7 +42,6 @@ namespace Descrio.Generator.Callable
                 if (methodSymbol.DeclaredAccessibility != Accessibility.Public &&
                     methodSymbol.DeclaredAccessibility != Accessibility.Internal)
                 {
-                    // Skip private/protected methods as they cannot be accessed from the generated internal wrapper class.
                     continue;
                 }
 
@@ -58,106 +58,77 @@ namespace Descrio.Generator.Callable
                         ClassName = classSymbol.Name,
                         FullClassName = classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                         Accessibility = classSymbol.DeclaredAccessibility,
-                        Namespace = classSymbol.ContainingNamespace.IsGlobalNamespace ?
+                        Namespace = classSymbol.ContainingNamespace?.IsGlobalNamespace ?? false ?
                             null :
-                            classSymbol.ContainingNamespace.ToDisplayString(),
+                            classSymbol.ContainingNamespace?.ToDisplayString(),
                         Methods = new List<CallableMethodInfo>()
                     };
                     classInfos[classSymbol] = classInfo;
                 }
 
-                var (isAwaitable, returnsValue) = AnalyzeReturnType(compilation, methodSymbol.ReturnType);
+                var (isAwaitable, returnsValue) = SymbolAnalyzer.AnalyzeReturnType(compilation, methodSymbol.ReturnType);
 
                 var methodInfo = new CallableMethodInfo
                 {
+                    MethodSymbol = methodSymbol,
                     MethodName = methodSymbol.Name,
-                    CallableName = GetCallableName(methodSymbol, attributeData),
+                    CallableName = SymbolAnalyzer.GetCallableName(methodSymbol, attributeData),
                     ReturnType = methodSymbol.ReturnType,
                     IsAwaitable = isAwaitable,
                     ReturnsValue = returnsValue,
-                    Parameters = methodSymbol.Parameters.Select(p => new ParameterInfo
+                    Parameters = methodSymbol.Parameters.Select(p =>
                     {
-                        Name = p.Name,
-                        Type = p.Type,
-                        HasDefaultValue = p.HasExplicitDefaultValue,
-                        DefaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue : null
+                        var mappableMembers = SymbolAnalyzer.IsMappableType(p.Type) ?
+                            SymbolAnalyzer.GetMappableMemberInfos(p.Type) :
+                            null;
+
+                        var parameterInfo = new ParameterInfo
+                        {
+                            Name = p.Name,
+                            Type = p.Type,
+                            HasDefaultValue = p.HasExplicitDefaultValue,
+                            DefaultValue = p.HasExplicitDefaultValue ? p.ExplicitDefaultValue : null,
+                            MappableMembers = mappableMembers
+                        };
+
+                        if (mappableMembers == null)
+                        {
+                            SymbolAnalyzer.ReportDiagnosticsForMappableType(p.Type, context, reportedDiagnostics);
+                        }
+
+                        return parameterInfo;
                     }).ToList()
                 };
                 classInfo.Methods.Add(methodInfo);
             }
 
+            CheckCallableNameDuplication(classInfos, context);
+
             return classInfos.Values.ToList();
         }
 
-        private static (bool IsAwaitable, bool ReturnsValue) AnalyzeReturnType(Compilation compilation, ITypeSymbol type)
+        static void CheckCallableNameDuplication(Dictionary<ISymbol, CallableClassInfo> classInfos, GeneratorExecutionContext context)
         {
-            if (type == null)
-                return (false, false);
-
-            var getAwaiterMethod = type.GetMembers("GetAwaiter")
-                .OfType<IMethodSymbol>()
-                .FirstOrDefault(m =>
-                    !m.IsStatic &&
-                    m.Parameters.Length == 0 &&
-                    m.DeclaredAccessibility == Accessibility.Public);
-
-            if (getAwaiterMethod == null)
+            foreach (var classInfo in classInfos.Values)
             {
-                return (false, type.SpecialType != SpecialType.System_Void);
+                var duplicateGroups = classInfo.Methods
+                    .GroupBy(m => m.CallableName)
+                    .Where(g => g.Count() > 1);
+
+                foreach (var group in duplicateGroups)
+                {
+                    var callableName = group.Key;
+                    foreach (var methodInfo in group)
+                    {
+                        var location = methodInfo.MethodSymbol.Locations.FirstOrDefault() ?? Location.None;
+                        context.ReportDiagnostic(Diagnostic.Create(
+                            DiagnosticDescriptors.DuplicateCallableNameError,
+                            location,
+                            callableName,
+                            classInfo.ClassName));
+                    }
+                }
             }
-
-            var awaiterType = getAwaiterMethod.ReturnType;
-            if (awaiterType == null)
-                return (false, type.SpecialType != SpecialType.System_Void);
-
-            var isCompletedProperty = awaiterType.GetMembers("IsCompleted")
-                .OfType<IPropertySymbol>()
-                .FirstOrDefault(p => p.Type.SpecialType == SpecialType.System_Boolean);
-
-            var notifyCompletion = compilation.GetTypeByMetadataName("System.Runtime.CompilerServices.INotifyCompletion");
-            var getResultMethod = awaiterType.GetMembers("GetResult")
-                .OfType<IMethodSymbol>()
-                .FirstOrDefault();
-
-            if (isCompletedProperty == null ||
-                notifyCompletion == null ||
-                !awaiterType.AllInterfaces.Contains(notifyCompletion, SymbolEqualityComparer.Default) ||
-                getResultMethod == null)
-            {
-                return (false, type.SpecialType != SpecialType.System_Void);
-            }
-
-            bool returnsValue = getResultMethod.ReturnType.SpecialType != SpecialType.System_Void;
-            return (true, returnsValue);
-        }
-
-        private static string GetCallableName(IMethodSymbol methodSymbol, AttributeData attributeData)
-        {
-            // [Callable] -> methodSymbol.Name
-            // [Callable(null)] -> methodSymbol.Name
-            // [Callable("")] -> methodSymbol.Name
-            // [Callable("MyName")] -> "MyName"
-            // [Callable(Name = "MyName")] -> "MyName"
-
-            // First, check for named arguments like [Callable(Name = "MyName")]
-            var namedArgument = attributeData.NamedArguments.FirstOrDefault(arg => arg.Key == "Name");
-            if (namedArgument.Key != null &&
-                namedArgument.Value.Value is string namedArgValue &&
-                !string.IsNullOrEmpty(namedArgValue))
-            {
-                return namedArgValue;
-            }
-
-            // If not found, check for constructor arguments like [Callable("MyName")]
-            var constructorArgument = attributeData.ConstructorArguments.FirstOrDefault();
-            if (constructorArgument.Value is string ctorArgValue &&
-                !string.IsNullOrEmpty(ctorArgValue))
-            {
-                return ctorArgValue;
-            }
-
-            // If no name is provided, use the method name itself.
-            return methodSymbol.Name;
         }
     }
 }
