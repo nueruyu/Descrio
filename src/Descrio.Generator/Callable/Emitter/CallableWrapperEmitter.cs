@@ -99,6 +99,11 @@ namespace Descrio.Generator.Callable.Emitter
                     }
                 }
 
+                if (param.Type.IsValueType && param.Type.NullableAnnotation != Microsoft.CodeAnalysis.NullableAnnotation.Annotated)
+                {
+                    sb.AppendLine($"if (p_val_{paramName} == null) throw new System.InvalidCastException($\"Cannot convert null to non-nullable type {param.Type.ToDisplayString(Microsoft.CodeAnalysis.SymbolDisplayFormat.FullyQualifiedFormat)} for parameter '{paramName}'.\");");
+                }
+
                 var castExpression = CodeGenerationHelpers.GetCastExpression(param.Type, $"p_val_{paramName}");
                 sb.AppendLine($"var p_{paramName} = {castExpression};");
 

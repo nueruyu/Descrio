@@ -28,6 +28,7 @@ namespace MyGame.Actions
                     p_val_position = System.Convert.ChangeType(p_val_position, p_targetType_position);
                 }
             }
+            if (p_val_position == null) throw new System.InvalidCastException($"Cannot convert null to non-nullable type global::MyGame.Data.Vector2D for parameter 'position'.");
             var p_position = (global::MyGame.Data.Vector2D)p_val_position!;
             
             _target.MoveTo(p_position);

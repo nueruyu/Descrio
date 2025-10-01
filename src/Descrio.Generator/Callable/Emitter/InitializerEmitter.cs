@@ -25,7 +25,7 @@ namespace Descrio.Generator.Callable.Emitter
                         foreach (var typeSymbol in allMappableTypes)
                         {
                             var fullTypeName = typeSymbol.ToFullTypeName();
-                            var safeClassName = fullTypeName.Replace("global::", "").Replace(".", "_").Replace("<", "_").Replace(">", "_");
+                            var safeClassName = fullTypeName.Replace("global::", "").Replace(".", "_").Replace("<", "_").Replace(">", "_").Replace("?", "_");
                             var converterClassName = $"__Descrio_{safeClassName}_Converter";
 
                             var ns = typeSymbol.ContainingNamespace;

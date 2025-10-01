@@ -10,7 +10,7 @@ namespace Descrio.Generator.Callable.Emitter
         public static string BuildTypeConverterClass(ITypeSymbol typeSymbol, IReadOnlyCollection<ITypeSymbol> allMappableTypes)
         {
             var fullTypeName = typeSymbol.ToFullTypeName();
-            var safeClassName = fullTypeName.Replace("global::", "").Replace(".", "_").Replace("<", "_").Replace(">", "_");
+            var safeClassName = fullTypeName.Replace("global::", "").Replace(".", "_").Replace("<", "_").Replace(">", "_").Replace("?", "_");
             var converterClassName = $"__Descrio_{safeClassName}_Converter";
 
             var sb = new IndentedStringBuilder();

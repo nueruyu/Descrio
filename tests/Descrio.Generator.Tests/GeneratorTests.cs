@@ -316,5 +316,24 @@ namespace MyGame.Actions
 ";
             return TestGenerator(inputSource);
         }
+
+        [Test]
+        public Task NonNullableStructParameter_GeneratesNullCheck()
+        {
+            const string inputSource = @"
+using Descrio.Attributes;
+namespace MyGame.Actions
+{
+    public struct MyStruct { public int Value { get; set; } }
+
+    public class MyActions
+    {
+        [Callable]
+        public void DoSomething(MyStruct data) {}
+    }
+}
+";
+            return TestGenerator(inputSource);
+        }
     }
 }

@@ -11,6 +11,6 @@ namespace Descrio.Execution.Converters
         /// </summary>
         /// <param name="source">The source object to convert, typically an IDictionary&lt;object, object&gt;.</param>
         /// <returns>The converted, strongly-typed object.</returns>
-        object Convert(object source);
+        object? Convert(object? source);
     }
 }

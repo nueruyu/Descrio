@@ -11,7 +11,7 @@ namespace Descrio.Execution.Converters
     /// </summary>
     public static partial class TypeConverterRegistry
     {
-        private static bool _isInitialized = false;
+        private static volatile bool _isInitialized = false;
         private static readonly object _lock = new object();
         private static readonly Dictionary<Type, ITypeConverter> _converters = new Dictionary<Type, ITypeConverter>();
 
