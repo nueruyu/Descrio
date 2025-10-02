@@ -23,7 +23,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.PublicData = (string?)System.Convert.ChangeType(memberVal_PublicData, typeof(string));
+                    instance.PublicData = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<string>(memberVal_PublicData);
                 }
                 catch (Exception ex)
                 {

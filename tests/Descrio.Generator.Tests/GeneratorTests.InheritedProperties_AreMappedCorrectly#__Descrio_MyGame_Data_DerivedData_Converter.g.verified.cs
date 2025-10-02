@@ -23,7 +23,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.DerivedProp = (string?)System.Convert.ChangeType(memberVal_DerivedProp, typeof(string));
+                    instance.DerivedProp = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<string>(memberVal_DerivedProp);
                 }
                 catch (Exception ex)
                 {
@@ -34,7 +34,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.BaseProp = (string?)System.Convert.ChangeType(memberVal_BaseProp, typeof(string));
+                    instance.BaseProp = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<string>(memberVal_BaseProp);
                 }
                 catch (Exception ex)
                 {

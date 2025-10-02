@@ -90,49 +90,19 @@ namespace Descrio.Generator.Callable.Emitter
                 {
                     var itemType = listItemType ?? arrayItemType;
                     var itemTypeName = itemType.ToFullTypeName();
-                    var itemCastType = Descrio.Generator.Utils.CodeGenerationHelpers.GetCastTargetString(itemType);
                     var linqMethod = isList ? "ToList" : "ToArray";
 
                     sb.AppendLine($"if (p_val_{paramName} is System.Collections.IEnumerable list_{paramName})");
                     using (sb.IndentedBlock())
                     {
-                        sb.AppendLine($"p_val_{paramName} = list_{paramName}.Cast<object?>().Select(item =>");
-                        using (sb.IndentedBlock())
-                        {
-                            if (itemType.IsValueType && itemType.NullableAnnotation != Microsoft.CodeAnalysis.NullableAnnotation.Annotated)
-                            {
-                                sb.AppendLine($"if (item == null) throw new System.InvalidCastException($\"Cannot convert null to non-nullable list item of type '{itemTypeName}'.\");");
-                            }
-                            else
-                            {
-                                sb.AppendLine("if (item == null) return default;");
-                            }
-
-                            sb.AppendLine($"var itemTargetType = typeof({itemTypeName});");
-                            sb.AppendLine("if (item != null && (item.GetType() == itemTargetType || itemTargetType.IsInstanceOfType(item))) return ({itemCastType})item;");
-                            sb.AppendLine($"if (Descrio.Execution.Converters.TypeConverterRegistry.TryGetConverter(itemTargetType, out var converter)) return ({itemCastType})converter.Convert(item);");
-                            sb.AppendLine($"return ({itemCastType})System.Convert.ChangeType(item, itemTargetType);");
-                        }
-                        sb.AppendLine($").{linqMethod}();");
+                        sb.AppendLine($"p_val_{paramName} = list_{paramName}.Cast<object?>().Select(item => " +
+                                      $"global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<{itemTypeName}>(item)" +
+                                      $").{linqMethod}();");
                     }
                 }
                 else
                 {
-                    sb.AppendLine($"var p_targetType_{paramName} = typeof({typeName});");
-                    sb.AppendLine($"if (p_val_{paramName} != null && !p_targetType_{paramName}.IsInstanceOfType(p_val_{paramName}))");
-                    using (sb.IndentedBlock())
-                    {
-                        sb.AppendLine($"if (Descrio.Execution.Converters.TypeConverterRegistry.TryGetConverter(p_targetType_{paramName}, out var converter_{paramName}))");
-                        using (sb.IndentedBlock())
-                        {
-                            sb.AppendLine($"p_val_{paramName} = converter_{paramName}.Convert(p_val_{paramName});");
-                        }
-                        sb.AppendLine("else");
-                        using (sb.IndentedBlock())
-                        {
-                            sb.AppendLine($"p_val_{paramName} = System.Convert.ChangeType(p_val_{paramName}, p_targetType_{paramName});");
-                        }
-                    }
+                    sb.AppendLine($"p_val_{paramName} = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<{typeName}>(p_val_{paramName});");
                 }
 
                 if (param.Type.IsValueType && param.Type.NullableAnnotation != Microsoft.CodeAnalysis.NullableAnnotation.Annotated)

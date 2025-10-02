@@ -18,15 +18,7 @@ namespace MyGame.Actions
             if (!args.TryGetValue("data", out p_val_data)) throw new System.ArgumentException("Missing required argument: 'data'.");
             if (p_val_data is System.Collections.IEnumerable list_data)
             {
-                p_val_data = list_data.Cast<object?>().Select(item =>
-                {
-                    if (item == null) throw new System.InvalidCastException($"Cannot convert null to non-nullable list item of type 'int'.");
-                    var itemTargetType = typeof(int);
-                    if (item != null && (item.GetType() == itemTargetType || itemTargetType.IsInstanceOfType(item))) return ({itemCastType})item;
-                    if (Descrio.Execution.Converters.TypeConverterRegistry.TryGetConverter(itemTargetType, out var converter)) return ((int))converter.Convert(item);
-                    return ((int))System.Convert.ChangeType(item, itemTargetType);
-                }
-                ).ToArray();
+                p_val_data = list_data.Cast<object?>().Select(item => global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<int>(item)).ToArray();
             }
             var p_data = (int[]?)p_val_data;
             

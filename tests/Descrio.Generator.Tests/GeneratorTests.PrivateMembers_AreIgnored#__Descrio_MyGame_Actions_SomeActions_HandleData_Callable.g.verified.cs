@@ -16,18 +16,7 @@ namespace MyGame.Actions
         {
             object? p_val_data;
             if (!args.TryGetValue("data", out p_val_data)) throw new System.ArgumentException("Missing required argument: 'data'.");
-            var p_targetType_data = typeof(global::MyGame.Data.DataWithPrivateMembers);
-            if (p_val_data != null && !p_targetType_data.IsInstanceOfType(p_val_data))
-            {
-                if (Descrio.Execution.Converters.TypeConverterRegistry.TryGetConverter(p_targetType_data, out var converter_data))
-                {
-                    p_val_data = converter_data.Convert(p_val_data);
-                }
-                else
-                {
-                    p_val_data = System.Convert.ChangeType(p_val_data, p_targetType_data);
-                }
-            }
+            p_val_data = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.DataWithPrivateMembers>(p_val_data);
             var p_data = (global::MyGame.Data.DataWithPrivateMembers?)p_val_data;
             
             _target.HandleData(p_data);

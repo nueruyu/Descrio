@@ -23,7 +23,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.Amount = (int)System.Convert.ChangeType(memberVal_Amount, typeof(int));
+                    instance.Amount = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<int>(memberVal_Amount);
                 }
                 catch (Exception ex)
                 {
@@ -34,7 +34,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.IsCritical = (bool)System.Convert.ChangeType(memberVal_IsCritical, typeof(bool));
+                    instance.IsCritical = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<bool>(memberVal_IsCritical);
                 }
                 catch (Exception ex)
                 {

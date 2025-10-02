@@ -16,18 +16,7 @@ namespace MyGame.Actions
         {
             object? p_val_skill;
             if (!args.TryGetValue("skill", out p_val_skill)) throw new System.ArgumentException("Missing required argument: 'skill'.");
-            var p_targetType_skill = typeof(global::MyGame.Data.SkillData);
-            if (p_val_skill != null && !p_targetType_skill.IsInstanceOfType(p_val_skill))
-            {
-                if (Descrio.Execution.Converters.TypeConverterRegistry.TryGetConverter(p_targetType_skill, out var converter_skill))
-                {
-                    p_val_skill = converter_skill.Convert(p_val_skill);
-                }
-                else
-                {
-                    p_val_skill = System.Convert.ChangeType(p_val_skill, p_targetType_skill);
-                }
-            }
+            p_val_skill = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.SkillData>(p_val_skill);
             var p_skill = (global::MyGame.Data.SkillData?)p_val_skill;
             
             _target.ExecuteSkill(p_skill);

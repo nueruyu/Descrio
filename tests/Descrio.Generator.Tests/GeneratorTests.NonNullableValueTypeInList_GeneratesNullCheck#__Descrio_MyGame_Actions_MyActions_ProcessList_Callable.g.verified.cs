@@ -18,15 +18,7 @@ namespace MyGame.Actions
             if (!args.TryGetValue("data", out p_val_data)) throw new System.ArgumentException("Missing required argument: 'data'.");
             if (p_val_data is System.Collections.IEnumerable list_data)
             {
-                p_val_data = list_data.Cast<object?>().Select(item =>
-                {
-                    if (item == null) throw new System.InvalidCastException($"Cannot convert null to non-nullable list item of type 'global::MyGame.Actions.MyStruct'.");
-                    var itemTargetType = typeof(global::MyGame.Actions.MyStruct);
-                    if (item != null && (item.GetType() == itemTargetType || itemTargetType.IsInstanceOfType(item))) return ({itemCastType})item;
-                    if (Descrio.Execution.Converters.TypeConverterRegistry.TryGetConverter(itemTargetType, out var converter)) return ((global::MyGame.Actions.MyStruct))converter.Convert(item);
-                    return ((global::MyGame.Actions.MyStruct))System.Convert.ChangeType(item, itemTargetType);
-                }
-                ).ToList();
+                p_val_data = list_data.Cast<object?>().Select(item => global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Actions.MyStruct>(item)).ToList();
             }
             var p_data = (global::System.Collections.Generic.List<global::MyGame.Actions.MyStruct>?)p_val_data;
             

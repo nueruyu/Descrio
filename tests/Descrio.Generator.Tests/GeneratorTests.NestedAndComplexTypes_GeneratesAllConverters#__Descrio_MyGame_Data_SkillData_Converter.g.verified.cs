@@ -23,7 +23,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.SkillName = (string?)System.Convert.ChangeType(memberVal_SkillName, typeof(string));
+                    instance.SkillName = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<string>(memberVal_SkillName);
                 }
                 catch (Exception ex)
                 {
@@ -34,14 +34,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    if (memberVal_Target is string strVal_Target)
-                    {
-                        instance.Target = (global::MyGame.Data.TargetType)Enum.Parse(typeof(global::MyGame.Data.TargetType), strVal_Target, true);
-                    }
-                    else
-                    {
-                        instance.Target = (global::MyGame.Data.TargetType)Enum.ToObject(typeof(global::MyGame.Data.TargetType), memberVal_Target);
-                    }
+                    instance.Target = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.TargetType>(memberVal_Target);
                 }
                 catch (Exception ex)
                 {
@@ -56,9 +49,7 @@ namespace MyGame.Data
                     
                     instance.DamageEffects = list_DamageEffects.Cast<object?>().Select(item =>
                     {
-                        if (item == null) return default;
-                        if (!TypeConverterRegistry.TryGetConverter(typeof(global::MyGame.Data.DamageInfo), out var converter)) throw new InvalidOperationException($"Converter for list item 'global::MyGame.Data.DamageInfo' not found.");
-                        return (global::MyGame.Data.DamageInfo?)converter.Convert(item);
+                        return global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.DamageInfo>(item);
                     }
                     ).ToList();
                 }
@@ -75,9 +66,7 @@ namespace MyGame.Data
                     
                     instance.BonusEffects = list_BonusEffects.Cast<object?>().Select(item =>
                     {
-                        if (item == null) return default;
-                        if (!TypeConverterRegistry.TryGetConverter(typeof(global::MyGame.Data.DamageInfo), out var converter)) throw new InvalidOperationException($"Converter for list item 'global::MyGame.Data.DamageInfo' not found.");
-                        return (global::MyGame.Data.DamageInfo?)converter.Convert(item);
+                        return global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.DamageInfo>(item);
                     }
                     ).ToArray();
                 }

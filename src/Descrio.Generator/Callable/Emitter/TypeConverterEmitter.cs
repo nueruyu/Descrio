@@ -87,22 +87,6 @@ namespace Descrio.Generator.Callable.Emitter
         {
             var valueToConvert = $"memberVal_{memberName}";
             var memberTypeName = memberType.ToFullTypeName();
-            var castType = CodeGenerationHelpers.GetCastTargetString(memberType);
-
-            if (memberType.TypeKind == TypeKind.Enum)
-            {
-                sb.AppendLine($"if ({valueToConvert} is string strVal_{memberName})");
-                using (sb.IndentedBlock())
-                {
-                    sb.AppendLine($"{instanceName}.{memberName} = ({memberTypeName})Enum.Parse(typeof({memberTypeName}), strVal_{memberName}, true);");
-                }
-                sb.AppendLine("else");
-                using (sb.IndentedBlock())
-                {
-                    sb.AppendLine($"{instanceName}.{memberName} = ({memberTypeName})Enum.ToObject(typeof({memberTypeName}), {valueToConvert});");
-                }
-                return;
-            }
 
             if (CodeGenerationHelpers.IsGenericList(memberType, out var listElementType))
             {
@@ -115,23 +99,8 @@ namespace Descrio.Generator.Callable.Emitter
                 AppendCollectionConversionLogic(sb, instanceName, memberName, arrayElementType!, valueToConvert, "ToArray", allMappableTypes);
                 return;
             }
-
-            if (allMappableTypes.Contains(memberType, SymbolEqualityComparer.Default))
-            {
-                sb.AppendLine($"if (TypeConverterRegistry.TryGetConverter(typeof({memberTypeName}), out var converter_{memberName}))");
-                using (sb.IndentedBlock())
-                {
-                    sb.AppendLine($"{instanceName}.{memberName} = {castType}converter_{memberName}.Convert({valueToConvert});");
-                }
-                sb.AppendLine("else");
-                using (sb.IndentedBlock())
-                {
-                    sb.AppendLine($"throw new InvalidOperationException($\"Converter not found for nested type '{memberTypeName}'.\");");
-                }
-                return;
-            }
-
-            sb.AppendLine($"{instanceName}.{memberName} = {castType}System.Convert.ChangeType({valueToConvert}, typeof({memberTypeName}));");
+            
+            sb.AppendLine($"instance.{memberName} = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<{memberTypeName}>({valueToConvert});");
         }
 
         private static void AppendCollectionConversionLogic(IndentedStringBuilder sb, string instanceName, string memberName, ITypeSymbol itemType, string valueToConvert, string linqMethod, IReadOnlyCollection<ITypeSymbol> allMappableTypes)
@@ -144,24 +113,7 @@ namespace Descrio.Generator.Callable.Emitter
             sb.AppendLine($"{instanceName}.{memberName} = list_{memberName}.Cast<object?>().Select(item =>");
             using (sb.IndentedBlock())
             {
-                if (itemType.IsValueType && itemType.NullableAnnotation != Microsoft.CodeAnalysis.NullableAnnotation.Annotated)
-                {
-                    sb.AppendLine($"if (item == null) throw new System.InvalidCastException($\"Cannot convert null to non-nullable list item of type '{itemTypeName}'.\");");
-                }
-                else
-                {
-                    sb.AppendLine("if (item == null) return default;");
-                }
-
-                if (allMappableTypes.Contains(itemType, SymbolEqualityComparer.Default))
-                {
-                    sb.AppendLine($"if (!TypeConverterRegistry.TryGetConverter(typeof({itemTypeName}), out var converter)) throw new InvalidOperationException($\"Converter for list item '{itemTypeName}' not found.\");");
-                    sb.AppendLine($"return {itemCastType}converter.Convert(item);");
-                }
-                else
-                {
-                    sb.AppendLine($"return {itemCastType}System.Convert.ChangeType(item, typeof({itemTypeName}));");
-                }
+                sb.AppendLine($"return global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<{itemTypeName}>(item);");
             }
             sb.AppendLine($").{linqMethod}();");
         }

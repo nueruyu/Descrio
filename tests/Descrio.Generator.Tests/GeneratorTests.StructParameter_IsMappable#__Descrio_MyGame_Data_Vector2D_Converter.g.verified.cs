@@ -23,7 +23,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.X = (float)System.Convert.ChangeType(memberVal_X, typeof(float));
+                    instance.X = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<float>(memberVal_X);
                 }
                 catch (Exception ex)
                 {
@@ -34,7 +34,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.Y = (float)System.Convert.ChangeType(memberVal_Y, typeof(float));
+                    instance.Y = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<float>(memberVal_Y);
                 }
                 catch (Exception ex)
                 {

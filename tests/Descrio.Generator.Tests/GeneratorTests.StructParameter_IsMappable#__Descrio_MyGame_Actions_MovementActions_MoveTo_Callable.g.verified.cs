@@ -16,18 +16,7 @@ namespace MyGame.Actions
         {
             object? p_val_position;
             if (!args.TryGetValue("position", out p_val_position)) throw new System.ArgumentException("Missing required argument: 'position'.");
-            var p_targetType_position = typeof(global::MyGame.Data.Vector2D);
-            if (p_val_position != null && !p_targetType_position.IsInstanceOfType(p_val_position))
-            {
-                if (Descrio.Execution.Converters.TypeConverterRegistry.TryGetConverter(p_targetType_position, out var converter_position))
-                {
-                    p_val_position = converter_position.Convert(p_val_position);
-                }
-                else
-                {
-                    p_val_position = System.Convert.ChangeType(p_val_position, p_targetType_position);
-                }
-            }
+            p_val_position = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.Vector2D>(p_val_position);
             if (p_val_position == null) throw new System.InvalidCastException($"Cannot convert null to non-nullable type global::MyGame.Data.Vector2D for parameter 'position'.");
             var p_position = (global::MyGame.Data.Vector2D)p_val_position!;
             
