@@ -144,7 +144,15 @@ namespace Descrio.Generator.Callable.Emitter
             sb.AppendLine($"{instanceName}.{memberName} = list_{memberName}.Cast<object?>().Select(item =>");
             using (sb.IndentedBlock())
             {
-                sb.AppendLine("if (item == null) return default;");
+                if (itemType.IsValueType && itemType.NullableAnnotation != Microsoft.CodeAnalysis.NullableAnnotation.Annotated)
+                {
+                    sb.AppendLine($"if (item == null) throw new System.InvalidCastException($\"Cannot convert null to non-nullable list item of type '{itemTypeName}'.\");");
+                }
+                else
+                {
+                    sb.AppendLine("if (item == null) return default;");
+                }
+
                 if (allMappableTypes.Contains(itemType, SymbolEqualityComparer.Default))
                 {
                     sb.AppendLine($"if (!TypeConverterRegistry.TryGetConverter(typeof({itemTypeName}), out var converter)) throw new InvalidOperationException($\"Converter for list item '{itemTypeName}' not found.\");");

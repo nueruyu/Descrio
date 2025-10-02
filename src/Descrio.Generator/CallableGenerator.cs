@@ -84,7 +84,6 @@ namespace Descrio.Generator
             var initialTypes = callableClasses
                 .SelectMany(c => c.Methods)
                 .SelectMany(m => m.Parameters)
-                .Where(p => p.IsMappableComplexType)
                 .Select(p => p.Type);
 
             foreach (var type in initialTypes)

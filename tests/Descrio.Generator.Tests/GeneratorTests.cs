@@ -335,5 +335,28 @@ namespace MyGame.Actions
 ";
             return TestGenerator(inputSource);
         }
+
+        [Test]
+        public Task NonNullableValueTypeInList_GeneratesNullCheck()
+        {
+            const string inputSource = @"
+using Descrio.Attributes;
+using System.Collections.Generic;
+namespace MyGame.Actions
+{
+    public struct MyStruct { public int Value { get; set; } }
+
+    public class MyActions
+    {
+        [Callable]
+        public void ProcessList(List<MyStruct> data) {}
+
+        [Callable]
+        public void ProcessArray(int[] data) {}
+    }
+}
+";
+            return TestGenerator(inputSource);
+        }
     }
 }
