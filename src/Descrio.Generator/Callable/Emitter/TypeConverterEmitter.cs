@@ -100,7 +100,7 @@ namespace Descrio.Generator.Callable.Emitter
                 return;
             }
             
-            sb.AppendLine($"instance.{memberName} = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<{memberTypeName}>({valueToConvert});");
+            sb.AppendLine($"instance.{memberName} = global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{memberTypeName}>({valueToConvert});");
         }
 
         private static void AppendCollectionConversionLogic(IndentedStringBuilder sb, string instanceName, string memberName, ITypeSymbol itemType, string valueToConvert, string linqMethod, IReadOnlyCollection<ITypeSymbol> allMappableTypes)
@@ -113,7 +113,7 @@ namespace Descrio.Generator.Callable.Emitter
             sb.AppendLine($"{instanceName}.{memberName} = list_{memberName}.Cast<object?>().Select(item =>");
             using (sb.IndentedBlock())
             {
-                sb.AppendLine($"return global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<{itemTypeName}>(item);");
+                sb.AppendLine($"return global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{itemTypeName}>(item);");
             }
             sb.AppendLine($").{linqMethod}();");
         }

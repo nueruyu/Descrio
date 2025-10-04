@@ -25,15 +25,44 @@ namespace Descrio.Generator.Tests
         {
             var syntaxTree = CSharpSyntaxTree.ParseText(inputSource);
 
-            var compilation = CSharpCompilation.Create(
-                assemblyName: "Tests",
-                syntaxTrees: [syntaxTree],
+            // STAGE 1: Generate source code with full references
+            var generatorCompilation = CSharpCompilation.Create(
+                assemblyName: "GeneratorTests",
+                syntaxTrees: new[] { syntaxTree },
                 references: _references);
 
             var generator = new CallableGenerator();
             var driver = CSharpGeneratorDriver.Create(generator);
-            var runResult = driver.RunGenerators(compilation).GetRunResult();
+            var runResult = driver.RunGenerators(generatorCompilation).GetRunResult();
 
+            // STAGE 2: Verify generated code with minimal references
+            var assemblyPath = System.IO.Path.GetDirectoryName(typeof(object).Assembly.Location)!;
+            var minimalReferences = new[]
+            {
+                MetadataReference.CreateFromFile(System.IO.Path.Combine(assemblyPath, "netstandard.dll")),
+                MetadataReference.CreateFromFile(System.IO.Path.Combine(assemblyPath, "System.Runtime.dll")),
+                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                MetadataReference.CreateFromFile(System.IO.Path.Combine(assemblyPath, "System.Collections.dll")),
+                MetadataReference.CreateFromFile(typeof(System.Linq.Enumerable).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(Descrio.Abstractions.ICallable).Assembly.Location),
+            };
+
+            var validationCompilation = CSharpCompilation.Create(
+                "ValidationTests",
+                runResult.GeneratedTrees.Append(syntaxTree),
+                minimalReferences,
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+            var diagnostics = validationCompilation.GetDiagnostics()
+                .Where(d => d.Severity == DiagnosticSeverity.Error)
+                .ToList();
+
+            if (diagnostics.Any())
+            {
+                return Task.FromException(new System.Exception("Generated code failed to compile with minimal references:\n" + string.Join("\n", diagnostics)));
+            }
+
+            // If compilation is successful, proceed with snapshot verification.
             return Verify(runResult);
         }
 

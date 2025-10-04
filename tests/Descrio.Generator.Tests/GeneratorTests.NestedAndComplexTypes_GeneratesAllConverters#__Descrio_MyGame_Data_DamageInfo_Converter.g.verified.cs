@@ -23,7 +23,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.Amount = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<int>(memberVal_Amount);
+                    instance.Amount = global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<int>(memberVal_Amount);
                 }
                 catch (Exception ex)
                 {
@@ -34,7 +34,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.IsCritical = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<bool>(memberVal_IsCritical);
+                    instance.IsCritical = global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<bool>(memberVal_IsCritical);
                 }
                 catch (Exception ex)
                 {

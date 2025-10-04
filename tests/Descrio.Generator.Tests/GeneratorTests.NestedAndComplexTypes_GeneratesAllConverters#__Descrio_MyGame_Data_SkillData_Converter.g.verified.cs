@@ -23,7 +23,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.SkillName = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<string>(memberVal_SkillName);
+                    instance.SkillName = global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<string>(memberVal_SkillName);
                 }
                 catch (Exception ex)
                 {
@@ -34,7 +34,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.Target = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.TargetType>(memberVal_Target);
+                    instance.Target = global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.TargetType>(memberVal_Target);
                 }
                 catch (Exception ex)
                 {
@@ -49,7 +49,7 @@ namespace MyGame.Data
                     
                     instance.DamageEffects = list_DamageEffects.Cast<object?>().Select(item =>
                     {
-                        return global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.DamageInfo>(item);
+                        return global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.DamageInfo>(item);
                     }
                     ).ToList();
                 }
@@ -66,7 +66,7 @@ namespace MyGame.Data
                     
                     instance.BonusEffects = list_BonusEffects.Cast<object?>().Select(item =>
                     {
-                        return global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.DamageInfo>(item);
+                        return global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.DamageInfo>(item);
                     }
                     ).ToArray();
                 }

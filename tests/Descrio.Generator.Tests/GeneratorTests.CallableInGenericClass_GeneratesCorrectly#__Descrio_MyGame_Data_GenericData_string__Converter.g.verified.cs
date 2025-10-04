@@ -23,7 +23,7 @@ namespace MyGame.Data
             {
                 try
                 {
-                    instance.Value = global::Descrio.Core.Execution.Converters.RuntimeConversionHelper.ConvertItem<string>(memberVal_Value);
+                    instance.Value = global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<string>(memberVal_Value);
                 }
                 catch (Exception ex)
                 {
