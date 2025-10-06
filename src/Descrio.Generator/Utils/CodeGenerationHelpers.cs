@@ -11,12 +11,7 @@ namespace Descrio.Generator.Utils
             return typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         }
 
-        public static string GetCastTargetString(ITypeSymbol typeSymbol)
-        {
-            bool isNonNullableValueType = typeSymbol.IsValueType && typeSymbol.NullableAnnotation != NullableAnnotation.Annotated;
-            var typeName = typeSymbol.ToFullTypeName();
-            return isNonNullableValueType ? $"({typeName})" : $"({typeName}?)";
-        }
+        
 
         public static string GetCastExpression(ITypeSymbol typeSymbol, string variableName)
         {

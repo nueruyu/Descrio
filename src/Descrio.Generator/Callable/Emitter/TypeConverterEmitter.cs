@@ -138,16 +138,10 @@ namespace Descrio.Generator.Callable.Emitter
         private static void AppendCollectionConversionLogic(IndentedStringBuilder sb, string instanceName, string memberName, ITypeSymbol itemType, string valueToConvert, string linqMethod, IReadOnlyCollection<ITypeSymbol> allMappableTypes)
         {
             var itemTypeName = itemType.ToFullTypeName();
-            var itemCastType = CodeGenerationHelpers.GetCastTargetString(itemType);
 
             sb.AppendLine($"if ({valueToConvert} is not System.Collections.IEnumerable list_{memberName}) throw new InvalidCastException(\"Expected a list or array.\");");
             sb.AppendLine();
-            sb.AppendLine($"{instanceName}.{memberName} = list_{memberName}.Cast<object?>().Select(item =>");
-            using (sb.IndentedBlock())
-            {
-                sb.AppendLine($"return global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{itemTypeName}>(item);");
-            }
-            sb.AppendLine($").{linqMethod}();");
+            sb.AppendLine($"{instanceName}.{memberName} = list_{memberName}.Cast<object?>().Select(item => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{itemTypeName}>(item)).{linqMethod}();");
         }
     }
 }

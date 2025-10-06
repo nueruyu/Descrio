@@ -133,7 +133,7 @@ namespace Descrio.Generator.Callable
         {
             if (!IsMappableCandidate(type) || !HasPublicParameterlessConstructor(type))
             {
-                return Enumerable.Empty<ITypeSymbol>();
+                return Enumerable.Empty<ISymbol>();
             }
 
             return GetAllMembers(type)

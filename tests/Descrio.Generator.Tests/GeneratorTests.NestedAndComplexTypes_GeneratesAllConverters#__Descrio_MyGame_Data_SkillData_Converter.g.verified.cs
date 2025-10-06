@@ -47,11 +47,7 @@ namespace MyGame.Data
                 {
                     if (memberVal_DamageEffects is not System.Collections.IEnumerable list_DamageEffects) throw new InvalidCastException("Expected a list or array.");
                     
-                    instance.DamageEffects = list_DamageEffects.Cast<object?>().Select(item =>
-                    {
-                        return global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.DamageInfo>(item);
-                    }
-                    ).ToList();
+                    instance.DamageEffects = list_DamageEffects.Cast<object?>().Select(item => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.DamageInfo>(item)).ToList();
                 }
                 catch (Exception ex)
                 {
@@ -64,11 +60,7 @@ namespace MyGame.Data
                 {
                     if (memberVal_BonusEffects is not System.Collections.IEnumerable list_BonusEffects) throw new InvalidCastException("Expected a list or array.");
                     
-                    instance.BonusEffects = list_BonusEffects.Cast<object?>().Select(item =>
-                    {
-                        return global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.DamageInfo>(item);
-                    }
-                    ).ToArray();
+                    instance.BonusEffects = list_BonusEffects.Cast<object?>().Select(item => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.DamageInfo>(item)).ToArray();
                 }
                 catch (Exception ex)
                 {
