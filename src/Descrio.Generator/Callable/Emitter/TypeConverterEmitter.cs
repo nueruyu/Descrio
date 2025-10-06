@@ -123,8 +123,14 @@ namespace Descrio.Generator.Callable.Emitter
                 sb.AppendLine($".ToDictionary(");
                 using (sb.Indent())
                 {
-                    sb.AppendLine($"entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{keyTypeName}>(entry.Key) ?? throw new System.InvalidCastException(\"Dictionary key cannot be null.\"),");
-                    sb.AppendLine($"entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{valueTypeName}>(entry.Value));");
+                    sb.AppendLine($"entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{keyTypeName}>(entry.Key) ?? throw new System.InvalidCastException($\"Dictionary key for member '{memberName}' cannot be null.\"),");
+
+                    var valueConversion = $"global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{valueTypeName}>(entry.Value)";
+                    if (valueType.IsReferenceType && valueType.NullableAnnotation == NullableAnnotation.NotAnnotated)
+                    {
+                        valueConversion += $" ?? throw new System.InvalidCastException($\"Dictionary value for member '{memberName}' cannot be null.\")";
+                    }
+                    sb.AppendLine($"entry => {valueConversion});");
                 }
             }
         }
