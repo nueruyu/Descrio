@@ -1,0 +1,25 @@
+﻿{
+  Diagnostics: [
+    {
+      Location: /*
+    // This class is missing a public parameterless constructor.
+    public class InvalidData
+                 ^^^^^^^^^^^
+    {
+*/
+ : (6,17)-(6,28),
+      Message: The type 'InvalidData' requires a public parameterless constructor to be used as a mappable parameter in a [Callable] method. No TypeConverter will be generated.,
+      Severity: Warning,
+      WarningLevel: 1,
+      Descriptor: {
+        Id: DESCGEN001,
+        Title: Mappable type is missing a parameterless constructor,
+        Description: A public parameterless constructor is necessary for the source generator to create an instance of the type before mapping properties from the script.,
+        MessageFormat: The type '{0}' requires a public parameterless constructor to be used as a mappable parameter in a [Callable] method. No TypeConverter will be generated.,
+        Category: Usage,
+        DefaultSeverity: Warning,
+        IsEnabledByDefault: true
+      }
+    }
+  ]
+}

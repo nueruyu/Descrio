@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
 
 namespace Descrio.Generator.Callable.Models
 {
@@ -8,22 +9,9 @@ namespace Descrio.Generator.Callable.Models
         public ITypeSymbol Type { get; set; }
         public bool HasDefaultValue { get; set; }
         public object DefaultValue { get; set; }
-        public string TypeName => Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        public List<MappableMemberInfo> MappableMembers { get; set; }
 
-        public string DefaultValueAsString
-        {
-            get
-            {
-                if (!HasDefaultValue)
-                    return "default";
-                if (DefaultValue == null)
-                    return "null";
-                if (DefaultValue is string s)
-                    return $"\"{s.Replace("\"", "\\\"")}\"";
-                if (DefaultValue is bool b)
-                    return b ? "true" : "false";
-                return $"({TypeName}){DefaultValue}";
-            }
-        }
+        public string TypeName => Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        public bool IsMappableComplexType => MappableMembers != null;
     }
 }

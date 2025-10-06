@@ -1,0 +1,42 @@
+﻿{
+  Diagnostics: [
+    {
+      Location: /*
+        [Callable("DoAction")]
+        public void ActionOne() {}
+                    ^^^^^^^^^
+
+*/
+ : (8,20)-(8,29),
+      Message: The callable name 'DoAction' is already used by another method in the class 'DuplicateActions'. Callable names must be unique within a class.,
+      Severity: Error,
+      Descriptor: {
+        Id: DESCGEN002,
+        Title: Duplicate callable name detected,
+        MessageFormat: The callable name '{0}' is already used by another method in the class '{1}'. Callable names must be unique within a class.,
+        Category: Usage,
+        DefaultSeverity: Error,
+        IsEnabledByDefault: true
+      }
+    },
+    {
+      Location: /*
+        [Callable("DoAction")]
+        public void ActionTwo() {}
+                    ^^^^^^^^^
+    }
+*/
+ : (11,20)-(11,29),
+      Message: The callable name 'DoAction' is already used by another method in the class 'DuplicateActions'. Callable names must be unique within a class.,
+      Severity: Error,
+      Descriptor: {
+        Id: DESCGEN002,
+        Title: Duplicate callable name detected,
+        MessageFormat: The callable name '{0}' is already used by another method in the class '{1}'. Callable names must be unique within a class.,
+        Category: Usage,
+        DefaultSeverity: Error,
+        IsEnabledByDefault: true
+      }
+    }
+  ]
+}

@@ -10,6 +10,13 @@ namespace Descrio.Generator.Callable.Models
         public string FullClassName { get; set; }
         public Accessibility Accessibility { get; set; }
         public List<CallableMethodInfo> Methods { get; set; } = new List<CallableMethodInfo>();
-        public string SafeFileName => FullClassName.Replace("global::", "").Replace(":", "_").Replace(".", "_").Replace("<", "_").Replace(">", "_");
+
+        public string SafeFileName => FullClassName
+            .Replace("global::", "")
+            .Replace(":", "_")
+            .Replace(".", "_")
+            .Replace("<", "_")
+            .Replace(">", "_")
+            .Replace("?", "_");
     }
 }
