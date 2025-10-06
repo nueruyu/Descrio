@@ -123,7 +123,7 @@ namespace Descrio.Generator.Callable.Emitter
                 sb.AppendLine($".ToDictionary(");
                 using (sb.Indent())
                 {
-                    sb.AppendLine($"entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{keyTypeName}>(entry.Key)!,");
+                    sb.AppendLine($"entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{keyTypeName}>(entry.Key) ?? throw new System.InvalidCastException(\"Dictionary key cannot be null.\"),");
                     sb.AppendLine($"entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{valueTypeName}>(entry.Value));");
                 }
             }

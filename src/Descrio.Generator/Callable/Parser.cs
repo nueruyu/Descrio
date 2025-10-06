@@ -58,9 +58,7 @@ namespace Descrio.Generator.Callable
                         ClassName = classSymbol.Name,
                         FullClassName = classSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                         Accessibility = classSymbol.DeclaredAccessibility,
-                        Namespace = classSymbol.ContainingNamespace?.IsGlobalNamespace ?? false ?
-                            null :
-                            classSymbol.ContainingNamespace?.ToDisplayString(),
+                        Namespace = (classSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns) ? ns.ToDisplayString() : null,
                         Methods = new List<CallableMethodInfo>()
                     };
                     classInfos[classSymbol] = classInfo;

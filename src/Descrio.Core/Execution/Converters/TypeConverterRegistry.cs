@@ -1,13 +1,12 @@
 #nullable enable
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 
 namespace Descrio.Execution.Converters
 {
     public static class TypeConverterRegistry
     {
-        private static readonly Dictionary<Type, ITypeConverter> _converters = new();
-        private static readonly object _lock = new();
+        private static readonly ConcurrentDictionary<Type, ITypeConverter> _converters = new();
 
         /// <summary>
         /// Registers a type converter for a specific target type.
@@ -15,10 +14,7 @@ namespace Descrio.Execution.Converters
         /// </summary>
         public static void Register(Type targetType, ITypeConverter converter)
         {
-            lock (_lock)
-            {
-                _converters[targetType] = converter;
-            }
+            _converters[targetType] = converter;
         }
 
         /// <summary>
@@ -26,10 +22,7 @@ namespace Descrio.Execution.Converters
         /// </summary>
         public static bool TryGetConverter(Type targetType, out ITypeConverter? converter)
         {
-            lock (_lock)
-            {
-                return _converters.TryGetValue(targetType, out converter);
-            }
+            return _converters.TryGetValue(targetType, out converter);
         }
     }
 }

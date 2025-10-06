@@ -28,7 +28,7 @@ namespace MyGame.Data
                     instance.Resistances = dict_Resistances
                         .Cast<System.Collections.DictionaryEntry>()
                         .ToDictionary(
-                            entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<string>(entry.Key)!,
+                            entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<string>(entry.Key) ?? throw new System.InvalidCastException("Dictionary key cannot be null."),
                             entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<int>(entry.Value));
                 }
                 catch (Exception ex)
@@ -45,7 +45,7 @@ namespace MyGame.Data
                     instance.StatusEffects = dict_StatusEffects
                         .Cast<System.Collections.DictionaryEntry>()
                         .ToDictionary(
-                            entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<string>(entry.Key)!,
+                            entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<string>(entry.Key) ?? throw new System.InvalidCastException("Dictionary key cannot be null."),
                             entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<global::MyGame.Data.EffectData>(entry.Value));
                 }
                 catch (Exception ex)
