@@ -387,5 +387,42 @@ namespace MyGame.Actions
 ";
             return TestGenerator(inputSource);
         }
+
+        [Test]
+        public Task DictionaryMember_GeneratesCorrectly()
+        {
+            const string inputSource = @"
+using Descrio.Attributes;
+using System.Collections.Generic;
+
+namespace MyGame.Data
+{
+    public class EffectData
+    {
+        public string Name { get; set; }
+        public int Power { get; set; }
+        public EffectData() {}
+    }
+
+    public class CharacterStats
+    {
+        public Dictionary<string, int> Resistances { get; set; }
+        public Dictionary<string, EffectData> StatusEffects { get; set; }
+        public CharacterStats() {}
+    }
+}
+
+namespace MyGame.Actions
+{
+    using MyGame.Data;
+    public class StatusActions
+    {
+        [Callable]
+        public void ApplyStatus(CharacterStats stats) {}
+    }
+}
+";
+            return TestGenerator(inputSource);
+        }
     }
 }

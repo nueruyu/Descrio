@@ -99,8 +99,34 @@ namespace Descrio.Generator.Callable.Emitter
                 AppendCollectionConversionLogic(sb, instanceName, memberName, arrayElementType!, valueToConvert, "ToArray", allMappableTypes);
                 return;
             }
+
+            if (CodeGenerationHelpers.IsGenericDictionary(memberType, out var keyType, out var valueType))
+            {
+                AppendDictionaryConversionLogic(sb, instanceName, memberName, keyType!, valueType!, valueToConvert, allMappableTypes);
+                return;
+            }
             
             sb.AppendLine($"instance.{memberName} = global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{memberTypeName}>({valueToConvert});");
+        }
+
+        private static void AppendDictionaryConversionLogic(IndentedStringBuilder sb, string instanceName, string memberName, ITypeSymbol keyType, ITypeSymbol valueType, string valueToConvert, IReadOnlyCollection<ITypeSymbol> allMappableTypes)
+        {
+            var keyTypeName = keyType.ToFullTypeName();
+            var valueTypeName = valueType.ToFullTypeName();
+
+            sb.AppendLine($"if ({valueToConvert} is not System.Collections.IDictionary dict_{memberName}) throw new InvalidCastException($\"Expected a dictionary for member '{memberName}'.\");");
+            sb.AppendLine();
+            sb.AppendLine($"{instanceName}.{memberName} = dict_{memberName}");
+            using (sb.Indent())
+            {
+                sb.AppendLine($".Cast<System.Collections.DictionaryEntry>()");
+                sb.AppendLine($".ToDictionary(");
+                using (sb.Indent())
+                {
+                    sb.AppendLine($"entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{keyTypeName}>(entry.Key)!,");
+                    sb.AppendLine($"entry => global::Descrio.Execution.Converters.RuntimeConversionHelper.ConvertItem<{valueTypeName}>(entry.Value));");
+                }
+            }
         }
 
         private static void AppendCollectionConversionLogic(IndentedStringBuilder sb, string instanceName, string memberName, ITypeSymbol itemType, string valueToConvert, string linqMethod, IReadOnlyCollection<ITypeSymbol> allMappableTypes)

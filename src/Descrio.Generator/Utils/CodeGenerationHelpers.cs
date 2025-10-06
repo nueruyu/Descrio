@@ -76,5 +76,19 @@ namespace Descrio.Generator.Utils
             elementType = null;
             return false;
         }
+
+        public static bool IsGenericDictionary(ITypeSymbol type, out ITypeSymbol? keyType, out ITypeSymbol? valueType)
+        {
+            if (type is INamedTypeSymbol { IsGenericType: true } namedType &&
+                namedType.OriginalDefinition.ToDisplayString() == "System.Collections.Generic.Dictionary<TKey, TValue>")
+            {
+                keyType = namedType.TypeArguments[0];
+                valueType = namedType.TypeArguments[1];
+                return true;
+            }
+            keyType = null;
+            valueType = null;
+            return false;
+        }
     }
 }
