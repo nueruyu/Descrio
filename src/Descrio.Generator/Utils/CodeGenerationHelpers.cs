@@ -41,6 +41,11 @@ namespace Descrio.Generator.Utils
                 return b ? "true" : "false";
             }
 
+            if (paramInfo.DefaultValue is char c)
+            {
+                return $"'{c}'";
+            }
+
             // For other literal types (numeric, etc.), their default C# literal representation is sufficient.
             // Explicit cast might be needed if the type is ambiguous without it (e.g., float vs double).
             if (paramInfo.DefaultValue is float f)
