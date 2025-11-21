@@ -21,7 +21,7 @@ namespace Descrio.Parsing.Cst
             var rootMapping = ExpectMapping(cstNode, "Script root");
 
             var statements = GetOptionalList(rootMapping, "statements", FromCstToStatement) ?? new List<IStatement>();
-            var imports = GetOptionalList(rootMapping, "imports", node => ExpectScalar(node, "Import path").Value) ?? new List<string>();
+            var imports = GetOptionalList(rootMapping, "imports", ToImportPath) ?? new List<string>();
 
             return new Module(statements.ToArray(), imports.ToArray(), cstNode.Location);
         }
@@ -99,6 +99,13 @@ namespace Descrio.Parsing.Cst
                 default:
                     throw new AstConversionException($"The node type '{cstNode.TypeHint ?? cstNode.NodeType.ToString()}' is not valid in an expression context.", cstNode.Location);
             }
+        }
+
+        private static string ToImportPath(CstNode cstNode)
+        {
+            var map = ExpectMapping(cstNode);
+            var path = GetRequiredScalar(map, "from");
+            return path;
         }
 
         #endregion Main Conversion Methods
