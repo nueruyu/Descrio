@@ -147,7 +147,7 @@ namespace Descrio.Generator.Callable.Emitter
                 else
                 {
                     sb.AppendLine($"_target.{methodInfo.MethodName}({callParamsStr});");
-                    sb.AppendLine("return new ValueTask<object?>(null);");
+                    sb.AppendLine("return default;");
                 }
             }
         }
