@@ -7,6 +7,8 @@ namespace Descrio.Generator.Callable
 {
     internal static class SymbolAnalyzer
     {
+        private const string MappableAttributeName = "Descrio.Attributes.MappableAttribute";
+
         public static string GetCallableName(IMethodSymbol methodSymbol, AttributeData attributeData)
         {
             // [Callable] -> methodSymbol.Name
@@ -182,17 +184,25 @@ namespace Descrio.Generator.Callable
                 return false;
             }
 
-            if (type.TypeKind != TypeKind.Class && type.TypeKind != TypeKind.Struct)
+            if (type.TypeKind == TypeKind.Array ||
+                type.OriginalDefinition.ToDisplayString() is "System.Collections.Generic.List<T>" or "System.Collections.Generic.Dictionary<TKey, TValue>")
             {
                 return false;
             }
 
-            if (type.OriginalDefinition.ToDisplayString() is "System.Collections.Generic.List<T>" or "System.Collections.Generic.Dictionary<TKey, TValue>")
+            if (type.TypeKind == TypeKind.Struct)
             {
-                return false;
+                return true;
             }
 
-            return true;
+            if (type.TypeKind == TypeKind.Class)
+            {
+                return type.GetAttributes().Any(ad =>
+                    ad.AttributeClass != null &&
+                    ad.AttributeClass.ToDisplayString() == MappableAttributeName);
+            }
+
+            return false;
         }
 
         private static bool HasPublicParameterlessConstructor(ITypeSymbol type)

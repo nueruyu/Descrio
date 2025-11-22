@@ -74,6 +74,7 @@ using Descrio.Attributes;
 
 namespace MyGame.Data
 {
+    [Mappable]
     public class EffectData
     {
         public string? Name { get; set; }
@@ -106,6 +107,7 @@ namespace MyGame.Data
 {
     public enum TargetType { Player, Enemy, All }
 
+    [Mappable]
     public class DamageInfo
     {
         public int Amount { get; set; }
@@ -113,6 +115,7 @@ namespace MyGame.Data
         public DamageInfo() {}
     }
 
+    [Mappable]
     public class SkillData
     {
         public string? SkillName { get; set; }
@@ -145,6 +148,7 @@ using Descrio.Attributes;
 namespace MyGame.Data
 {
     // This class is missing a public parameterless constructor.
+    [Mappable]
     public class InvalidData
     {
         public string? Message { get; set; }
@@ -174,6 +178,7 @@ using Descrio.Attributes;
 
 namespace MyGame.Data
 {
+    [Mappable]
     public class DataWithPrivateMembers
     {
         public string? PublicData { get; set; }
@@ -256,6 +261,7 @@ using Descrio.Attributes;
 
 namespace MyGame.Data
 {
+    [Mappable]
     public class EffectData
     {
         public string? Name { get; set; }
@@ -288,12 +294,14 @@ using Descrio.Attributes;
 
 namespace MyGame.Data
 {
+    [Mappable]
     public class BaseData
     {
         public string? BaseProp { get; set; }
         public BaseData() {}
     }
 
+    [Mappable]
     public class DerivedData : BaseData
     {
         public string? DerivedProp { get; set; }
@@ -322,6 +330,7 @@ using Descrio.Attributes;
 
 namespace MyGame.Data
 {
+    [Mappable]
     public class GenericData<T>
     {
         public T Value { get; set; }
@@ -416,6 +425,7 @@ using System.Collections.Generic;
 
 namespace MyGame.Data
 {
+    [Mappable]
     public class EffectData
     {
         public string Name { get; set; }
@@ -423,6 +433,7 @@ namespace MyGame.Data
         public EffectData() {}
     }
 
+    [Mappable]
     public class CharacterStats
     {
         public Dictionary<string, int> Resistances { get; set; }

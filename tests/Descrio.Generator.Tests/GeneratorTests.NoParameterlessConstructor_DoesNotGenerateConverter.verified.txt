@@ -2,12 +2,12 @@
   Diagnostics: [
     {
       Location: /*
-    // This class is missing a public parameterless constructor.
+    [Mappable]
     public class InvalidData
                  ^^^^^^^^^^^
     {
 */
- : (6,17)-(6,28),
+ : (7,17)-(7,28),
       Message: The type 'InvalidData' requires a public parameterless constructor to be used as a mappable parameter in a [Callable] method. No TypeConverter will be generated.,
       Severity: Warning,
       WarningLevel: 1,
