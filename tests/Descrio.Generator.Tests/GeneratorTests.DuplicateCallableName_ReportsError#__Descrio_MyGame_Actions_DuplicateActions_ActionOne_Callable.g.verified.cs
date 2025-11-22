@@ -16,7 +16,7 @@ namespace MyGame.Actions
         public System.Threading.Tasks.ValueTask<object?> CallAsync(global::Descrio.Data.Arguments args, global::Descrio.Execution.ExecutionContext context)
         {
             _target.ActionOne();
-            return new ValueTask<object?>(null);
+            return default;
         }
     }
 }

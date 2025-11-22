@@ -26,7 +26,7 @@ namespace MyGame.Actions
             var p_value = (float?)p_val_value;
             
             _target.Process(p_count, p_value);
-            return new ValueTask<object?>(null);
+            return default;
         }
     }
 }

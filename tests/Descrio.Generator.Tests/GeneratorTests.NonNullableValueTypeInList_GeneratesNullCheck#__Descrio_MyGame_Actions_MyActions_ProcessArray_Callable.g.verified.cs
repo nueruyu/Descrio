@@ -24,7 +24,7 @@ namespace MyGame.Actions
             var p_data = (int[]?)p_val_data;
             
             _target.ProcessArray(p_data);
-            return new ValueTask<object?>(null);
+            return default;
         }
     }
 }

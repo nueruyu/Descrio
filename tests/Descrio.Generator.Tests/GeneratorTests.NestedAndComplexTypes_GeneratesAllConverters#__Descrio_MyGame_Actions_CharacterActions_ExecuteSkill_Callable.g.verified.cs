@@ -21,7 +21,7 @@ namespace MyGame.Actions
             var p_skill = (global::MyGame.Data.SkillData?)p_val_skill;
             
             _target.ExecuteSkill(p_skill);
-            return new ValueTask<object?>(null);
+            return default;
         }
     }
 }

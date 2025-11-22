@@ -21,7 +21,7 @@ namespace MyGame.Actions
             var p_stats = (global::MyGame.Data.CharacterStats?)p_val_stats;
             
             _target.ApplyStatus(p_stats);
-            return new ValueTask<object?>(null);
+            return default;
         }
     }
 }

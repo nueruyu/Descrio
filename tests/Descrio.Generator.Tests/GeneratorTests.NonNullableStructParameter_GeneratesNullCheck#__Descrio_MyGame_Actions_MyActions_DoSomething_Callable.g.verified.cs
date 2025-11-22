@@ -22,7 +22,7 @@ namespace MyGame.Actions
             var p_data = (global::MyGame.Actions.MyStruct)p_val_data!;
             
             _target.DoSomething(p_data);
-            return new ValueTask<object?>(null);
+            return default;
         }
     }
 }

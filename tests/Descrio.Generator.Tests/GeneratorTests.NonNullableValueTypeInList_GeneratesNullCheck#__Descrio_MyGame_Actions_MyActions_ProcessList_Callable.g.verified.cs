@@ -24,7 +24,7 @@ namespace MyGame.Actions
             var p_data = (global::System.Collections.Generic.List<global::MyGame.Actions.MyStruct>?)p_val_data;
             
             _target.ProcessList(p_data);
-            return new ValueTask<object?>(null);
+            return default;
         }
     }
 }

@@ -21,7 +21,7 @@ namespace MyGame.Actions
             var p_data = (global::MyGame.Data.DerivedData?)p_val_data;
             
             _target.ProcessDerivedData(p_data);
-            return new ValueTask<object?>(null);
+            return default;
         }
     }
 }
