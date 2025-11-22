@@ -11,16 +11,26 @@ namespace Descrio.Generator.Utils
             return typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         }
 
-        
-
         public static string GetCastExpression(ITypeSymbol typeSymbol, string variableName)
         {
             var typeName = typeSymbol.ToFullTypeName();
+
             if (typeSymbol.IsValueType && typeSymbol.NullableAnnotation != NullableAnnotation.Annotated)
             {
                 return $"({typeName}){variableName}!";
             }
-            return $"({typeName}?){variableName}";
+
+            if (typeSymbol.IsValueType)
+            {
+                return $"({typeName}){variableName}";
+            }
+
+            if (!typeName.EndsWith("?"))
+            {
+                return $"({typeName}?){variableName}";
+            }
+
+            return $"({typeName}){variableName}";
         }
 
         public static string GetParameterDefaultValueLiteral(ParameterInfo paramInfo)

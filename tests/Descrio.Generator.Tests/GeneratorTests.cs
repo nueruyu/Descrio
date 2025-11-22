@@ -230,6 +230,25 @@ namespace MyGame.Actions
         }
 
         [Test]
+        public Task NullableValueTypeParameter_GeneratesCorrectCast()
+        {
+            const string inputSource = @"
+using Descrio.Attributes;
+
+namespace MyGame.Actions
+{
+    public class NullableActions
+    {
+        // int? and float? parameters should generate valid cast expressions (e.g., (int?)val, not (int??)val)
+        [Callable]
+        public void Process(int? count, System.Nullable<float> value) {}
+    }
+}
+";
+            return TestGenerator(inputSource);
+        }
+
+        [Test]
         public Task MethodWithReturnValue_GeneratesCorrectly()
         {
             const string inputSource = @"

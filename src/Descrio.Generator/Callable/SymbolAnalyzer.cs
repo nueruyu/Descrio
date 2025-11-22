@@ -177,6 +177,11 @@ namespace Descrio.Generator.Callable
                 return false;
             }
 
+            if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+            {
+                return false;
+            }
+
             if (type.TypeKind != TypeKind.Class && type.TypeKind != TypeKind.Struct)
             {
                 return false;
