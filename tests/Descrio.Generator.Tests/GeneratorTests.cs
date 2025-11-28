@@ -140,6 +140,34 @@ namespace MyGame.Actions
         }
 
         [Test]
+        public Task NonMappableClass_DoesNotGenerateConverter()
+        {
+            const string inputSource = @"
+using Descrio.Attributes;
+
+namespace MyGame.Data
+{
+    public class NonMappableData
+    {
+        public string? Message { get; set; }
+    }
+}
+
+namespace MyGame.Actions
+{
+    using MyGame.Data;
+    public class BadActions
+    {
+        [Callable]
+        public void Process(NonMappableData data) {}
+    }
+}
+";
+            // We expect the generator to run without errors, but it should not produce a converter for InvalidData.
+            return TestGenerator(inputSource);
+        }
+
+        [Test]
         public Task NoParameterlessConstructor_DoesNotGenerateConverter()
         {
             const string inputSource = @"
